@@ -919,16 +919,16 @@ class Server extends AppModel
         $filterRules['minimal'] = 1;
         $filterRules['published'] = 1;
 
-        // Fetch event index from cache if exists and is not modified
+        // Fetch event index from cache if exists and is not modified on server
         $redis = RedisTool::init();
         $indexFromCache = $redis->get("misp:event_index_cache:{$serverSync->serverId()}");
         if ($indexFromCache) {
             $etagPos = strpos($indexFromCache, "\n");
             if ($etagPos === false) {
-                throw new RuntimeException("Could not find etag in cache fro server {$serverSync->serverId()}");
+                throw new RuntimeException("Could not find etag in cache for server {$serverSync->serverId()}");
             }
             $etag = substr($indexFromCache, 0, $etagPos);
-            $serverSync->debug("Event index loaded from Redis cache with etag $etag containing");
+            $serverSync->debug("Event index loaded from Redis cache with etag $etag");
         } else {
             $etag = '""';  // Provide empty ETag, so MISP will compute ETag for returned data
         }
@@ -5652,6 +5652,34 @@ class Server extends AppModel
                     'optionsSource' => function () {
                         return $this->loadTagCollections();
                     }
+                ),
+                'default_object_distribution' => array(
+                    'level' => 1,
+                    'description' => __('The default distribution setting for objects, set it to \'event\' if you would like the objects to default to the event distribution level. (0-3 or "event")'),
+                    'value' => 'event',
+                    'test' => 'testForEmpty',
+                    'type' => 'string',
+                    'options' => array(
+                        '0' => __('Your organisation only'),
+                        '1' => __('This community only'),
+                        '2' => __('Connected communities'),
+                        '3' => __('All communities'),
+                        'event' => __('Inherit from event')
+                    ),
+                ),
+                'default_eventreport_distribution' => array(
+                    'level' => 1,
+                    'description' => __('The default distribution setting for event-reports, set it to \'event\' if you would like the event-reports to default to the event distribution level. (0-3 or "event")'),
+                    'value' => 'event',
+                    'test' => 'testForEmpty',
+                    'type' => 'string',
+                    'options' => array(
+                        '0' => __('Your organisation only'),
+                        '1' => __('This community only'),
+                        '2' => __('Connected communities'),
+                        '3' => __('All communities'),
+                        'event' => __('Inherit from event')
+                    ),
                 ),
                 'default_publish_alert' => array(
                     'level' => 0,
