@@ -1156,12 +1156,9 @@ class Feed extends AppModel
     private function __prepareFilterRules($feed)
     {
         $filterRules = false;
-        if (isset($feed['Feed']['rules']) && !empty($feed['Feed']['rules'])) {
-            $filterRules = json_decode($feed['Feed']['rules'], true);
-            if ($filterRules === null) {
-                throw new Exception('Could not parse feed filter rules JSON: ' . json_last_error_msg(), json_last_error());
-            }
-            $filterRules['url_params'] = !empty($filterRules['url_params']) ? $this->jsonDecode($filterRules['url_params']) : [];
+        if (!empty($feed['Feed']['rules'])) {
+            $filterRules = JsonTool::decode($feed['Feed']['rules']);
+            $filterRules['url_params'] = !empty($filterRules['url_params']) ? JsonTool::decodeArray($filterRules['url_params']) : [];
         }
         return $filterRules;
     }
@@ -2196,7 +2193,7 @@ class Feed extends AppModel
     private function getFollowRedirect(HttpSocket $HttpSocket, $url, $request, $iterations = 5)
     {
         for ($i = 0; $i < $iterations; $i++) {
-            $response = $HttpSocket->get($url, array(), $request);
+            $response = $HttpSocket->get($url, [], $request);
             if ($response->isRedirect()) {
                 $HttpSocket = $this->__setupHttpSocket(); // Replace $HttpSocket with fresh instance
                 $url = trim($response->getHeader('Location'), '=');
@@ -2205,7 +2202,7 @@ class Feed extends AppModel
             }
         }
 
-        throw new Exception("Maximum number of iteration reached.");
+        throw new Exception("Too many redirects when fetching $url.");
     }
 
     /**
