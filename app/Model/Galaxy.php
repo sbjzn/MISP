@@ -139,6 +139,7 @@ class Galaxy extends AppModel
             $galaxy['default'] = true;
             $galaxy['org_id'] = 0;
             $galaxy['orgc_id'] = 0;
+            $galaxy['distribution'] = 3;
             if (isset($existingGalaxies[$galaxy['uuid']])) {
                 if (
                     $force ||
