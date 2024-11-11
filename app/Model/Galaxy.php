@@ -40,6 +40,7 @@ class Galaxy extends AppModel
             'rule' => 'valueIsJson',
             'message' => 'The provided Kill Chain Order is not a valid json format',
             'required' => false,
+            'allowEmpty' => true
         ),
     );
 
