@@ -294,7 +294,7 @@ class GalaxyClusterRelation extends AppModel
             $errors[] = __('Unkown ID');
         } else {
             $options = array('conditions' => array(
-                'uuid' => $relation['GalaxyClusterRelation']['galaxy_cluster_uuid']
+                "{$this->SourceCluster->alias}.uuid" => $relation['GalaxyClusterRelation']['galaxy_cluster_uuid']
             ));
             $cluster = $this->SourceCluster->fetchGalaxyClusters($user, $options);
             if (empty($cluster)) {
