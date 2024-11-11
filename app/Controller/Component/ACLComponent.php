@@ -322,6 +322,7 @@ class ACLComponent extends Component
             'restSearch' => array('*'),
             'restSearchExport' => array('*'),
             'runTaxonomyExclusivityCheck' => array('*'),
+            'runWorkflow' => array(),
             'saveFreeText' => array('perm_add'),
             'stix' => array('*'),
             'stix2' => array('*'),
@@ -881,6 +882,8 @@ class ACLComponent extends Component
             'import' => ['perm_warninglist'],
         ),
         'workflows' => [
+            'add' => [],
+            'adhoc' => [],
             'index' => [],
             'rebuildRedis' => [],
             'edit' => [],

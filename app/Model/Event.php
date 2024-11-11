@@ -8157,6 +8157,32 @@ class Event extends AppModel
         }
     }
 
+    public function runWorkflow($event_id, $workflow_ids)
+    {
+        $this->Workflow = ClassRegistry::init('Workflow');
+        $payload = [
+            'eventid' => [$event_id],
+        ];
+        $all_results = [
+            'success_count' => 0,
+            'error_count' => 0,
+            'error_messages' => [],
+        ];
+        foreach ($workflow_ids as $workflow_id) {
+            if (!$this->Workflow->isAdHocWorkflow($workflow_id)) {
+                throw new MethodNotAllowedException("Can only run a Ad-Hoc Workflow");
+            }
+            $result = $this->Workflow->executeWorkflow($workflow_id, $payload);
+            if (!empty($result['success'])) {
+                $all_results['success_count'] += 1;
+            } else {
+                $all_results['error_count'] += 1;
+                $all_results['error_messages'][] = $result['message'];
+            }
+        }
+        return $all_results;
+    }
+
     public function getTrendsForTags(array $user, array $eventFilters=[], int $baseDayRange, int $rollingWindows=3, $tagFilterPrefixes=null): array
     {
         $fullDayNumber = $baseDayRange + $baseDayRange * $rollingWindows;

@@ -5880,6 +5880,48 @@ class EventsController extends AppController
         }
     }
 
+    public function runWorkflow($id)
+    {
+        $event = $this->Event->fetchSimpleEvent($this->Auth->user(), $id);
+        if (empty($event)) {
+            throw new MethodNotAllowedException(__('Invalid Event'));
+        }
+        if (!$this->__canModifyEvent($event)) {
+            throw new ForbiddenException(__('You do not have permission to do that.'));
+        }
+        if ($this->request->is('Post')) {
+            $workflow_ids = [];
+            foreach ($this->request->data['Event'] as $workflow_id => $enabled) {
+                if ($enabled) {
+                    $workflow_ids[] = $workflow_id;
+                }
+            }
+            $results = $this->Event->runWorkflow($id, $workflow_ids);
+            $succesMessage = __('Successfully ran %s Workflows on Event %s', count($workflow_ids), h($id));
+            $errorMessage = __('Error(s) while running Workflow(s): ') . implode(', ', $results['error_messages']);
+            if ($this->_isRest()) {
+                return $this->RestResponse->saveSuccessResponse('Events', 'runWorkflow', $id, $this->response->type(), $results['success_count'] > 0 ? $succesMessage : $errorMessage);
+            } else {
+                if ($results['success_count'] > 0) {
+                    $this->Flash->success($succesMessage);
+                } else {
+                    $this->Flash->error($errorMessage);
+                }
+                $this->redirect('/events/view/' . $id);
+            }
+        } else {
+            $this->loadModel('Workflow');
+            $workflows = $this->Workflow->fetchAdHocWorkflows(true);
+            $workflows = $this->Workflow->attachTriggerParamsToWorkflow($workflows);
+            $allowedWorkflows = array_filter($workflows, function($workflow) {
+                return $workflow['trigger_scope'] == 'passed_event_ids';
+            });
+            $this->layout = false;
+            $this->set('workflows', $allowedWorkflows);
+            $this->render('ajax/run_workflow');
+        }
+    }
+
     public function getEventInfoById($id)
     {
         $user = $this->_closeSession();
