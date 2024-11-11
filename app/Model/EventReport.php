@@ -69,6 +69,12 @@ class EventReport extends AppModel
         ),
     );
 
+    public $hasMany = [
+        'EventReportTag' => [
+            'dependent' => true
+        ],
+    ];
+
     public function beforeValidate($options = array())
     {
         $eventReport = &$this->data['EventReport'];
@@ -569,7 +575,7 @@ class EventReport extends AppModel
             $objectTemplates = [];
         }
         $this->Galaxy = ClassRegistry::init('Galaxy');
-        $allowedGalaxies = $this->Galaxy->getAllowedMatrixGalaxies();
+        $allowedGalaxies = $this->Galaxy->getAllowedMatrixGalaxies($user);
         $allowedGalaxies = Hash::combine($allowedGalaxies, '{n}.Galaxy.uuid', '{n}.Galaxy');
         return [
             'attribute' => $attributes,

@@ -5057,7 +5057,7 @@ class EventsController extends AppController
             $galaxy_id = $mitreAttackGalaxyId;
         }
 
-        $matrixData = $this->Galaxy->getMatrix($galaxy_id); // throws exception if matrix not found
+        $matrixData = $this->Galaxy->getMatrix($this->Auth->user(), $galaxy_id); // throws exception if matrix not found
 
         $local = !empty($this->params['named']['local']);
         $this->set('local', $local);
@@ -5175,7 +5175,9 @@ class EventsController extends AppController
         App::uses('ColourGradientTool', 'Tools');
         $gradientTool = new ColourGradientTool();
         $colours = $gradientTool->createGradientFromValues($scores);
+        $this->set('galaxy_id', $galaxy_id);
         $this->set('eventId', $eventId);
+        $this->set('extended', $extended);
         $this->set('target_type', $scope);
         $this->set('columnOrders', $killChainOrders);
         $this->set('tabs', $tabs);
@@ -5188,9 +5190,11 @@ class EventsController extends AppController
         $this->set('pickingMode', !$disable_picking);
         $this->set('target_id', $scope_id);
         if ($matrixData['galaxy']['id'] == $mitreAttackGalaxyId) {
-            $this->set('defaultTabName', 'mitre-attack');
+            $this->set('defaultTabName', 'attack-enterprise');
             $this->set('removeTrailling', 2);
         }
+        $matrixGalaxies = $this->Galaxy->getAllowedMatrixGalaxies($this->Auth->user());
+        $this->set('matrixGalaxies', $matrixGalaxies);
 
         $this->render('/Elements/view_galaxy_matrix');
     }

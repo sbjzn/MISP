@@ -2139,6 +2139,7 @@ class Event extends AppModel
             }
             $this->__attachTags($event, $justExportableTags);
             $this->__attachGalaxies($event, $user, $options['excludeGalaxy'], $options['fetchFullClusters'], $options['fetchFullClusterRelationship']);
+            $this->__pruneUnknownClusters($event, $user);
             $event = $this->Orgc->attachOrgs($event, $fieldsOrg);
             if (!$sharingGroupReferenceOnly && $event['Event']['sharing_group_id']) {
                 if (isset($sharingGroupData[$event['Event']['sharing_group_id']])) {
@@ -2402,6 +2403,20 @@ class Event extends AppModel
                         }
                     }
                     $attribute['Galaxy'] = array_values($attribute['Galaxy']);
+                }
+            }
+        }
+    }
+
+    private function __pruneUnknownClusters(array &$event, array $user)
+    {
+        if (!Configure::read('MISP.hide_unkown_cluster', true) || $user['Role']['perm_sync']) {
+            return;
+        }
+        foreach ($event['EventTag'] as $i => $eventTag) {
+            if ($eventTag['Tag']['is_galaxy']) {
+                if (preg_match($this->EventTag->Tag::RE_CUSTOM_GALAXY, $eventTag['Tag']['name'])) {
+                    unset($event['EventTag'][$i]);
                 }
             }
         }
@@ -6738,7 +6753,16 @@ class Event extends AppModel
                         $id
                     );
                     if (!empty($original_uuid)) {
-                        $recovered_uuids[$attribute['uuid']] = $original_uuid;
+                        $recovered_uuids[$attribute['uuid']] = $original_uuid['uuid'];
+                        if (!empty($attribute['Tag'])) {
+                            foreach ($attribute['Tag'] as $tag) {
+                                $tag_id = $this->Attribute->AttributeTag->Tag->captureTag($tag, $user);
+                                if ($tag_id) {
+                                    $relationship_type = empty($tag['relationship_type']) ? false : $tag['relationship_type'];
+                                    $this->Attribute->AttributeTag->attachTagToAttribute($original_uuid['id'], $id, $tag_id, !empty($tag['local']), $relationship_type);
+                                }
+                            }
+                        }
                     } else {
                         $failed[] = $attribute['uuid'];
                     }
@@ -7047,11 +7071,11 @@ class Event extends AppModel
                     'Attribute.value' => $attribute_value
                 ),
                 'recursive' => -1,
-                'fields' => array('Attribute.uuid')
+                'fields' => array('Attribute.uuid', 'Attribute.id')
             )
         );
         if (!empty($original_uuid)) {
-            return $original_uuid['Attribute']['uuid'];
+            return $original_uuid['Attribute'];
         }
         $original_uuid = $this->Object->find(
             'first',
