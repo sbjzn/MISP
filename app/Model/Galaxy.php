@@ -448,7 +448,7 @@ class Galaxy extends AppModel
      * @param  bool  $full
      * @return array The galaxy or an error message
      */
-    public function fetchIfAuthorized(array $user, $galaxy, $authorizations, $throwErrors=true, $full=false)
+    public function fetchIfAuthorized(array $user, $galaxy, $authorizations, $throwErrors=true, $full=false, $rearrangeData=true)
     {
         $authorizations = is_array($authorizations) ? $authorizations : [$authorizations];
         $possibleAuthorizations = ['view', 'edit', 'delete'];
@@ -459,7 +459,7 @@ class Galaxy extends AppModel
             $galaxy[$this->alias] = $galaxy;
         }
         if (!isset($galaxy[$this->alias]['uuid'])) {
-            $galaxy = $this->fetchGalaxyById($user, $galaxy, $throwErrors, $full);
+            $galaxy = $this->fetchGalaxyById($user, $galaxy, $throwErrors, $full, $rearrangeData);
             if (empty($galaxy)) {
                 $message = __('Invalid galaxy');
                 if ($throwErrors) {
@@ -513,7 +513,7 @@ class Galaxy extends AppModel
      * @param bool $full
      * @return array
      */
-    public function fetchGalaxyById(array $user, $id, $throwErrors=true, $full=false)
+    public function fetchGalaxyById(array $user, $id, $throwErrors=true, $full=false, $rearrangeData=true)
     {
         $alias = $this->alias;
         if (Validation::uuid($id)) {
@@ -527,7 +527,7 @@ class Galaxy extends AppModel
             return array();
         }
 
-        return $this->fetchGalaxies($user, ['conditions' => $conditions, 'first' => true], $full=$full);
+        return $this->fetchGalaxies($user, ['conditions' => $conditions, 'first' => true], $full=$full, false, $rearrangeData);
     }
 
     /**
@@ -538,7 +538,7 @@ class Galaxy extends AppModel
      * @param  bool  $full
      * @return array
      */
-    public function fetchGalaxies(array $user, array $options, $full=false, $includeFullClusterRelationship=false)
+    public function fetchGalaxies(array $user, array $options, $full=false, $includeFullClusterRelationship=false, $rearrangeData=true)
     {
         $params = [
             'conditions' => $this->buildConditions($user),
@@ -598,16 +598,21 @@ class Galaxy extends AppModel
 
         if ($full) {
             foreach ($galaxies as $i => $galaxy) {
-                $galaxies[$i]['GalaxyCluster'] = $this->GalaxyCluster->fetchGalaxyClusters($user, [
+                $clusters = $this->GalaxyCluster->fetchGalaxyClusters($user, [
                     'conditions' => [
                         'galaxy_id' => $galaxy['Galaxy']['id'],
                     ],
                 ], true);
+                $galaxies[$i]['GalaxyCluster'] = array_map(function($cluster) {
+                    return $cluster['GalaxyCluster'];
+                }, $clusters);
             }
         }
 
-        foreach ($galaxies as $i => $galaxy) {
-            $galaxies[$i] = $this->arrangeData($galaxies[$i]);
+        if (!empty($rearrangeData)) {
+            foreach ($galaxies as $i => $galaxy) {
+                $galaxies[$i] = $this->arrangeData($galaxies[$i]);
+            }
         }
         if (isset($options['first']) && $options['first']) {
             return $galaxies[0];

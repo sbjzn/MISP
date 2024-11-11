@@ -117,7 +117,7 @@ class GalaxiesController extends AppController
             $passedArgsArray['searchall'] = $this->params['named']['searchall'];
         }
         $this->set('passedArgsArray', $passedArgsArray);
-        $galaxy = $this->Galaxy->fetchIfAuthorized($this->Auth->user(), $id, 'view', true, $this->_isRest());
+        $galaxy = $this->Galaxy->fetchIfAuthorized($this->Auth->user(), $id, 'view', true, $this->_isRest(), !$this->_isRest());
         if ($this->_isRest()) {
             return $this->RestResponse->viewData($galaxy, $this->response->type());
         } else {
