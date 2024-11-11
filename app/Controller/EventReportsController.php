@@ -71,6 +71,7 @@ class EventReportsController extends AppController
         $this->set('id', $reportId);
         $this->set('report', $report);
         $this->set('title_for_layout', __('Event report %s', $report['EventReport']['name']));
+        $this->__injectTemplateVariables($this->Auth->user());
         $this->__injectDistributionLevelToViewContext();
         $this->__injectPermissionsToViewContext($this->Auth->user(), $report);
     }
@@ -93,6 +94,7 @@ class EventReportsController extends AppController
         $this->set('report', $report);
         $this->__injectDistributionLevelToViewContext();
         $this->__injectPermissionsToViewContext($this->Auth->user(), $report);
+        $this->__injectTemplateVariables($this->Auth->user());
     }
 
     public function edit($id)
@@ -414,6 +416,62 @@ class EventReportsController extends AppController
         }
     }
 
+    public function configureTemplateVariable()
+    {
+        if (!$this->request->is('ajax')) {
+            throw new MethodNotAllowedException(__('This function can only be reached via AJAX.'));
+        }
+        if ($this->request->is('post')) {
+            if (isset($this->request->data['EventReport'])) {
+                $this->request->data = $this->request->data['EventReport'];
+            }
+            $template_variables = $this->request->data['template_variables'];
+            $template_variables = JsonTool::decode($template_variables);
+            $setting = [
+                'UserSetting' => [
+                    'user_id' => $this->Auth->user('id'),
+                    'setting' => 'eventreport_template_variables',
+                    'value' => $template_variables,
+                ]
+            ];
+            $this->loadModel('UserSetting');
+            $success = $this->UserSetting->setSetting($this->Auth->user(), $setting);
+            if (!empty($success)) {
+                $message = __('Template variables saved');
+                return $this->__getSuccessResponseBasedOnContext($message, null, 'configureTemplateVariable');
+            } else {
+                $message = __('Template variables could not be saved');
+                return $this->__getFailResponseBasedOnContext($message, null, 'configureTemplateVariable');
+            }
+        }
+        $this->layout = false;
+        $this->__injectTemplateVariables($this->Auth->user());
+        $this->render('ajax/configureTemplateVariables');
+    }
+
+    public function downloadAsPDF($reportId)
+    {
+        $moduleName = 'convert_markdown_to_pdf';
+        $this->loadModel('Module');
+        $module = $this->Module->getEnabledModule($moduleName, 'expansion');
+        if (!Configure::read('Plugin.Enrichment_' . $moduleName . '_enabled')) {
+            throw new MethodNotAllowedException('Module not found or not available.');
+        }
+        if (!$this->Module->canUse($this->Auth->user(), 'Enrichment', $module)) {
+            throw new MethodNotAllowedException('Module not found or not available.');
+        }
+
+        $report = $this->EventReport->simpleFetchById($this->Auth->user(), $reportId);
+        $content = $report['EventReport']['content'];
+        $contentWithTemplateVars = $this->EventReport->replaceWithTemplateVars($content, $this->Auth->user());
+        $contentWithVarsUnderGFM = $this->EventReport->replaceMISPElementByTheirValue($contentWithTemplateVars, $report['EventReport']['event_id'], $this->Auth->user());
+        $pdfFile = $this->EventReport->convertToPDF($contentWithVarsUnderGFM);
+        $fileExt = 'pdf';
+        $name = sprintf('%s_%s', $report['EventReport']['id'], $report['EventReport']['name']);
+        $filename = sprintf('%s_%s', $name, date("c"));
+        return $this->RestResponse->sendStringAsFile($pdfFile, $fileExt, $filename . '.' . $fileExt);
+    }
+
     private function __generateIndexConditions($filters = [])
     {
         $aclConditions = $this->EventReport->buildACLConditions($this->Auth->user());
@@ -537,6 +595,12 @@ class EventReportsController extends AppController
     {
         $canEdit = $this->ACL->canEditEventReport($user, $report);
         $this->set('canEdit', $canEdit);
+    }
+
+    private function __injectTemplateVariables(array $user)
+    {
+        $templateVariables = $this->User->UserSetting->getValueForUser($user['id'], 'eventreport_template_variables');
+        $this->set('templateVariables', $templateVariables);
     }
 
     /**
