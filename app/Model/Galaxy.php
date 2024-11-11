@@ -137,6 +137,8 @@ class Galaxy extends AppModel
         $existingGalaxies = array_column(array_column($existingGalaxies, 'Galaxy'), null, 'uuid');
         foreach ($galaxies as $galaxy) {
             $galaxy['default'] = true;
+            $galaxy['org_id'] = 0;
+            $galaxy['orgc_id'] = 0;
             if (isset($existingGalaxies[$galaxy['uuid']])) {
                 if (
                     $force ||
