@@ -37,7 +37,7 @@
 *
 *
 */
-if (!empty($static)) {
+if (!empty($static) && !isset($pickingMode)) {
     $pickingMode = false;
 }
 
@@ -62,7 +62,7 @@ if (isset($interpolation) && !empty($interpolation)) {
 }
 ?>
 
-<?php if ($pickingMode): ?>
+<?php if (!$pickingMode): ?>
 <div style="position: absolute; left: 1em; top: 0.25em;">
     <span>Galaxy Matrix: </span>
     <select id="galaxyMatrixPicker" data-toggle="chosen">
@@ -74,7 +74,7 @@ if (isset($interpolation) && !empty($interpolation)) {
 <?php endif; ?>
 
 
-<div style="position: relative;">
+<div style="position: relative; <?= !$pickingMode ? 'margin-top: 4.5em;' : '' ?>">
 <?php if (empty($static)): ?>
 <div class="attack-matrix-options" style="right: initial; background: transparent;">
 <ul id="attack-matrix-tabscontroller" class="nav nav-tabs" style="margin-bottom: 2px;">
@@ -142,7 +142,7 @@ foreach(array_keys($columnOrders) as $tabName):
 </div>
 <?php endif; ?>
 
-<div id="matrix_container" class="fixed-table-container-inner" style="margin-top: <?= $pickingMode ? '60' : '0' ?>px;" data-picking-mode="<?php echo $pickingMode ? 'true' : 'false'; ?>">
+<div id="matrix_container" class="fixed-table-container-inner" style="margin-top: <?= !$pickingMode ? '60' : '0' ?>px;" data-picking-mode="<?php echo $pickingMode ? 'true' : 'false'; ?>">
     <div class="tab-content">
     <?php foreach(array_keys($columnOrders) as $tabName): ?>
         <?php 
@@ -261,7 +261,7 @@ foreach(array_keys($columnOrders) as $tabName):
 <?php endif; ?>
 </div>
 
-<?php if ($pickingMode): ?>
+<?php if (!$pickingMode): ?>
 <script>
 $(document).ready(function() {
     $('[data-toggle="chosen"]')
