@@ -122,10 +122,10 @@ class GalaxiesController extends AppController
             return $this->RestResponse->viewData($galaxy, $this->response->type());
         } else {
             $this->set('galaxy', $galaxy);
-            $this->loadModel('Attribute');
-            $distributionLevels = $this->Attribute->distributionLevels;
+            $this->loadModel('MispAttribute');
+            $distributionLevels = $this->MispAttribute->distributionLevels;
             $this->set('distributionLevels', $distributionLevels);
-            $this->set('shortDist', $this->Attribute->shortDist);
+            $this->set('shortDist', $this->MispAttribute->shortDist);
         }
     }
 
@@ -201,8 +201,8 @@ class GalaxiesController extends AppController
 
     private function __setDistribution()
     {
-        $this->loadModel('Attribute');
-        $distributionLevels = $this->Attribute->distributionLevels;
+        $this->loadModel('MispAttribute');
+        $distributionLevels = $this->MispAttribute->distributionLevels;
         unset($distributionLevels[4], $distributionLevels[5]);
         $this->set('distributionLevels', $distributionLevels);
         $this->set('initialDistribution', 0);
