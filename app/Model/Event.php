@@ -3640,7 +3640,7 @@ class Event extends AppModel
      * @return array[]
      * @throws Exception
      */
-    public function addMISPExportFile(array $user, $data, $isXml = false, $takeOwnership = false, $publish = false)
+    public function addMISPExportFile(array $user, $data, $isXml = false, $takeOwnership = false, $publish = false, $allowLockOverride = false)
     {
         if (empty($data)) {
             throw new Exception("File is empty");
@@ -3682,7 +3682,13 @@ class Event extends AppModel
             }
             $event = array('Event' => $event);
             $created_id = 0;
-            $event['Event']['locked'] = 1;
+            if (!empty($allowLockOverride) && !empty(Configure::read('MISP.allow_users_override_locked_field_when_importing_events'))) {
+                if (!isset($event['Event']['locked'])) {
+                    $event['Event']['locked'] = 1;
+                }
+            } else {
+                $event['Event']['locked'] = 1;
+            }
             $event['Event']['published'] = $publish;
             $event = $this->updatedLockedFieldForAllAnalystData($event);
             $result = $this->_add($event, true, $user, '', null, false, null, $created_id, $validationIssues);

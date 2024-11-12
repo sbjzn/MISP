@@ -2362,10 +2362,11 @@ class EventsController extends AppController
 
                 $takeOwnership = Configure::read('MISP.take_ownership_xml_import')
                     && (isset($this->request->data['Event']['takeownership']) && $this->request->data['Event']['takeownership'] == 1);
+                $allowLockOverride = Configure::read('MISP.allow_users_override_locked_field_when_importing_events') && (isset($this->request->data['Event']['allow_lock_override']) && $this->request->data['Event']['allow_lock_override'] == 1);
 
                 $publish = $this->request->data['Event']['publish'] ?? false;
                 try {
-                    $results = $this->Event->addMISPExportFile($this->Auth->user(), $data, $isXml, $takeOwnership, $publish);
+                    $results = $this->Event->addMISPExportFile($this->Auth->user(), $data, $isXml, $takeOwnership, $publish, $allowLockOverride);
                 } catch (Exception $e) {
                     $this->log("Exception during processing MISP file import: {$e->getMessage()}");
                     $this->Flash->error(__('Could not process MISP export file. %s', $e->getMessage()));
