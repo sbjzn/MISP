@@ -16,11 +16,10 @@ class LdapAuthenticate extends BaseAuthenticate
 
     /* 
     'LdapAuth' => [
-        'ldapHost' => 'ldap://openldap:389',
+        'ldapServer' => 'ldap://openldap:1389',
         'ldapDn' => 'dc=example,dc=com',
         'ldapReaderUser' => 'cn=reader,dc=example,dc=com',
-        'ldapReaderPassword' => 'readerpassword',
-        'ldapSearchFilter' => ''
+        'ldapReaderPassword' => 'password'
     ]
     */
 
@@ -36,10 +35,10 @@ class LdapAuthenticate extends BaseAuthenticate
             'ldapEmailField' => Configure::read('LdapAuth.ldapEmailField') ?? ['mail'],
             'ldapNetworkTimeout' => Configure::read('LdapAuth.ldapNetworkTimeout') ?? -1,
             'ldapProtocol' => Configure::read('LdapAuth.ldapProtocol') ?? 3,
-            'ldapAllowReferrals' => Configure::read('LdapAuth.ldapAllowReferrals') ?? false,
+            'ldapAllowReferrals' => Configure::read('LdapAuth.ldapAllowReferrals') ?? true,
             'starttls' => Configure::read('LdapAuth.starttls') ?? false,
-            'mixedAuth' => Configure::read('LdapAuth.mixedAuth') ?? false,
-            'ldapDefaultOrg' => Configure::read('LdapAuth.ldapDefaultOrg'),
+            'mixedAuth' => Configure::read('LdapAuth.mixedAuth') ?? true,
+            'ldapDefaultOrgId' => Configure::read('LdapAuth.ldapDefaultOrgId'),
             'ldapDefaultRoleId' => Configure::read('LdapAuth.ldapDefaultRoleId') ?? 3,
             'updateUser' => Configure::read('LdapAuth.updateUser') ?? true,
         ];
@@ -199,10 +198,10 @@ class LdapAuthenticate extends BaseAuthenticate
 
         // Insert user in database if not existent
         $userModel = ClassRegistry::init($this->settings['userModel']);
-        $org_id = self::$conf['ldapDefaultOrg'];
+        $orgId = self::$conf['ldapDefaultOrgId'];
 
         // If not in config, take first local organisation
-        if (!isset($org_id)) {
+        if (!isset($orgId)) {
             $firstOrg = $userModel->Organisation->find(
                 'first',
                 [
@@ -212,7 +211,7 @@ class LdapAuthenticate extends BaseAuthenticate
                     'order' => 'Organisation.id ASC'
                 ]
             );
-            $org_id = $firstOrg['Organisation']['id'];
+            $orgId = $firstOrg['Organisation']['id'];
         }
 
         // Set role_id based on group membership or default role
@@ -243,7 +242,7 @@ class LdapAuthenticate extends BaseAuthenticate
             // Create user
             $userData = ['User' => [
                 'email' => $mispUsername,
-                'org_id' => $org_id,
+                'org_id' => $orgId,
                 'password' => '',
                 'confirm_password' => '',
                 'authkey' => $userModel->generateAuthKey(),
@@ -256,7 +255,7 @@ class LdapAuthenticate extends BaseAuthenticate
         } else {
             // Update existing user
             $user['email'] = $mispUsername;
-            $user['org_id'] = $org_id;
+            $user['org_id'] = $orgId;
             $user['role_id'] = $roleId;
             # Reenable user in case it has been disabled
             $user['disabled'] = 0;
