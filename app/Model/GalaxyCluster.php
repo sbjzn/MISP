@@ -893,7 +893,7 @@ class GalaxyCluster extends AppModel
     public function attachExtendFromInfo($user, $cluster)
     {
         if (!empty($cluster['GalaxyCluster']['extends_uuid'])) {
-            $extensions = $this->fetchGalaxyClusters($user, array('conditions' => array('uuid' => $cluster['GalaxyCluster']['extends_uuid'])));
+            $extensions = $this->fetchGalaxyClusters($user, array('conditions' => array("{$this->alias}.uuid" => $cluster['GalaxyCluster']['extends_uuid'])));
             if (!empty($extensions)) {
                 $cluster['GalaxyCluster']['extended_from'] = $extensions[0];
             } else {
