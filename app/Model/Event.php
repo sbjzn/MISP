@@ -152,6 +152,7 @@ class Event extends AppModel
         'blockedAttributeTags',
         'eventsExtendingUuid',
         'extended',
+        'extending',
         'extensionList',
         'excludeGalaxy',
         // 'includeCustomGalaxyCluster', // not used
@@ -2302,6 +2303,11 @@ class Event extends AppModel
                 $results[$k] = $this->__mergeExtensions($user, $result, $options);
             }
         }
+        if ($options['extending']) {
+            foreach ($results as $k => $result) {
+                $results[$k] = $this->__mergeExtensions($user, $result, $options);
+            }
+        }
         if ($options['extensionList']) {
             foreach ($results as $k => $result) {
                 $results[$k] = $this->__fetchEventsExtendingEvent($user, $result, $options);
@@ -2538,16 +2544,21 @@ class Event extends AppModel
      */
     private function __mergeExtensions(array $user, array $event, array $options)
     {
-        $extensions = $this->fetchEvent($user, [
-            'eventsExtendingUuid' => $event['Event']['uuid'],
+        $fetchOptions = [
             'includeEventCorrelations' => $options['includeEventCorrelations'],
             'includeWarninglistHits' => $options['includeWarninglistHits'],
             'noShadowAttributes' => $options['noShadowAttributes'],
-            'noEventReports' => $options['noEventReports'],
+            'noEventReports' => !$options['noEventReports'],
             'noSightings' => isset($options['noSightings']) ? $options['noSightings'] : null,
             'sgReferenceOnly' => $options['sgReferenceOnly'],
             'includeAnalystData' => $options['includeAnalystData'],
-        ]);
+        ];
+        if (!empty($options['extending'])) {
+            $fetchOptions['event_uuid'] = $event['Event']['extends_uuid'];
+        } else {
+            $fetchOptions['eventsExtendingUuid'] = $event['Event']['uuid'];
+        }
+        $extensions = $this->fetchEvent($user, $fetchOptions);
         foreach ($extensions as $extensionEvent) {
             $eventMeta = array(
                 'id' => $extensionEvent['Event']['id'],
@@ -2561,7 +2572,7 @@ class Event extends AppModel
                 ),
             );
             $event['Event']['extensionEvents'][$eventMeta['id']] = $eventMeta;
-            $thingsToMerge = array('Attribute', 'Object', 'ShadowAttribute', 'Galaxy');
+            $thingsToMerge = array('Attribute', 'Object', 'ShadowAttribute', 'Galaxy', 'EventReport');
             foreach ($thingsToMerge as $thingToMerge) {
                 if (!isset($event[$thingToMerge])) {
                     $event[$thingToMerge] = [];
@@ -7920,6 +7931,18 @@ class Event extends AppModel
                 'extends_uuid' => $event['Event']['uuid']
             ]]);
             return $extendingEventIds;
+        }
+        return [];
+    }
+
+    public function getExtendedEventIdsFromEvent($user, $eventID)
+    {
+        $childEvent = $this->fetchSimpleEvent($user, $eventID);
+        if (!empty($childEvent)) {
+            $extendedEventIds = $this->fetchSimpleEventIds($user, ['conditions' => [
+                'uuid' => $childEvent['Event']['extends_uuid']
+            ]]);
+            return $extendedEventIds;
         }
         return [];
     }

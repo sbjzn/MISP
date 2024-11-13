@@ -92,7 +92,7 @@ $.get("<?php echo $baseurl; ?>/threads/view/<?php echo h($event['Event']['id']);
 });
 <?php endif; ?>
 
-$.get("<?php echo $baseurl; ?>/eventReports/index/event_id:<?= h($event['Event']['id']); ?>/index_for_event:1<?= $extended ? '/extended_event:1' : ''?>", function(data) {
+$.get("<?php echo $baseurl; ?>/eventReports/index/event_id:<?= h($event['Event']['id']); ?>/index_for_event:1<?= $extended ? '/extended_event:1' : ''?><?= $extending ? '/extending_event:1' : ''?>", function(data) {
     $("#eventreport_content").html(data);
     if ($('#eventreport_content table tbody > tr').length) { // open if contain a report
         $('#eventreport_toggle').click()

@@ -331,7 +331,7 @@ class EventReportsController extends AppController
 
     public function index()
     {
-        $filters = $this->IndexFilter->harvestParameters(['event_id', 'value', 'context', 'index_for_event', 'extended_event']);
+        $filters = $this->IndexFilter->harvestParameters(['event_id', 'value', 'context', 'index_for_event', 'extended_event', 'extending_event']);
         $filters['embedded_view']  = $this->request->is('ajax');
         $compiledConditions = $this->__generateIndexConditions($filters);
         $this->EventReport->includeAnalystData = true;
@@ -360,6 +360,7 @@ class EventReportsController extends AppController
                 }
                 $this->set('canModify', $canModify);
                 $this->set('extendedEvent', !empty($filters['extended_event']));
+                $this->set('extendingEvent', !empty($filters['extending_event']));
                 $fetcherModule = $this->EventReport->isFetchURLModuleEnabled();
                 $this->set('importModuleEnabled', is_array($fetcherModule));
                 $this->render('ajax/indexForEvent');
@@ -646,6 +647,9 @@ class EventReportsController extends AppController
             $extendingEventIds = [];
             if (!empty($filters['extended_event'])) {
                 $extendingEventIds = $this->EventReport->Event->getExtendingEventIdsFromEvent($this->Auth->user(), $filters['event_id']);
+            }
+            if (!empty($filters['extending_event'])) {
+                $extendingEventIds = $this->EventReport->Event->getExtendedEventIdsFromEvent($this->Auth->user(), $filters['event_id']);
             }
             $eventConditions = ['EventReport.event_id' => array_merge([$filters['event_id']], $extendingEventIds)];
         }
