@@ -38,34 +38,19 @@ class LdapAuthenticate extends BaseAuthenticate
             'ldapProtocol' => Configure::read('LdapAuth.ldapProtocol') ?? 3,
             'ldapAllowReferrals' => Configure::read('LdapAuth.ldapAllowReferrals') ?? false,
             'starttls' => Configure::read('LdapAuth.starttls') ?? false,
-            'mixedAuth' => Configure::read('LdapAuth.starttls') ?? false,
+            'mixedAuth' => Configure::read('LdapAuth.mixedAuth') ?? false,
             'ldapDefaultOrg' => Configure::read('LdapAuth.ldapDefaultOrg'),
             'ldapDefaultRoleId' => Configure::read('LdapAuth.ldapDefaultRoleId') ?? 3,
-            'updateUser' => Configure::read('LdapAuth.updateUser') ?? false,
+            'updateUser' => Configure::read('LdapAuth.updateUser') ?? true,
         ];
     }
 
     public function authenticate(CakeRequest $request, CakeResponse $response)
     {
+        // Try to authenticate the incoming request against the LDAP backend
         $user = $this->getUser($request);
 
-        $userFields = $request->data['User'];
-        $email = $userFields['email'];
-        $password = $userFields['password'];
-
-        $ldapconn = $this->ldapConnect();
-
-        if ($ldapconn) {
-            // LDAP bind
-            $ldapbind = ldap_bind($ldapconn, self::$conf['ldapReaderUser'],  self::$conf['ldapReaderPassword']);
-            // authentication verification
-            if (!$ldapbind) {
-                CakeLog::error("[LdapAuth] LDAP bind failed: " . ldap_error($ldapconn));
-                return false;
-            }
-        }
-
-        return true;
+        return $user;
     }
 
     private function ldapConnect()
@@ -76,7 +61,7 @@ class LdapAuthenticate extends BaseAuthenticate
 
         if (!$ldapconn) {
             CakeLog::error("[LdapAuth] LDAP server connection failed.");
-            return false;
+            throw new UnauthorizedException(__('User could not be authenticated by LDAP.'));
         }
 
         // LDAP protocol configuration
@@ -105,25 +90,61 @@ class LdapAuthenticate extends BaseAuthenticate
         return null;
     }
 
-    private function isUserMemberOf($group, $ldapUserData)
+    private function getUserMemberships($ldapconn, $ldapUserData)
     {
-        // return true of false depeding on if user is a member of group.
-        $returnCode = false;
-        unset($ldapUserData[0]['memberof']["count"]);
-        foreach ($ldapUserData[0]['memberof'] as $result) {
-            $r = explode(",", $result, 2);
-            $ldapgroup = explode("=", $r[0]);
-            if ($ldapgroup[1] == $group) {
-                $returnCode = true;
+        $groups = [];
+        $filter = '(member= ' . $ldapUserData[0]['dn'] . ')';
+        $ldapUserMemberships = ldap_search($ldapconn, self::$conf['ldapDn'], $filter, ['cn']);
+
+        if ($ldapUserMemberships) {
+            $entries = ldap_get_entries($ldapconn, $ldapUserMemberships);
+            foreach ($entries as $entry) {
+                if (is_array($entry) && isset($entry[0])) {
+                    $groups[] = $entry['cn'][0];
+                }
             }
         }
-        return $returnCode;
+
+        return $groups;
+    }
+
+    private function disableUser($mispUsername)
+    {
+        $userModel = ClassRegistry::init($this->settings['userModel']);
+        $user = $this->_findUser($mispUsername);
+        $user['disabled'] = 1;
+        $userModel->save($user, false);
+    }
+
+    private function getLdapUserData($ldapconn, $email)
+    {
+        // LDAP search filter
+        $filter = '(' . self::$conf['ldapSearchAttribute'] . '=' . $email . ')';
+        if (!empty(self::$conf['ldapSearchFilter'])) {
+            $filter =  '(&' . self::$conf['ldapSearchFilter'] . $filter . ')';
+        }
+
+        $ldapUser = ldap_search($ldapconn, self::$conf['ldapDn'], $filter, ['mail']);
+
+        if (!$ldapUser) {
+            CakeLog::error("[LdapAuth] LDAP user search failed: " . ldap_error($ldapconn));
+            throw new UnauthorizedException(__('User could not be authenticated by LDAP.'));
+        }
+
+        # Get user data
+        $ldapUserData = ldap_get_entries($ldapconn, $ldapUser);
+        if (!$ldapUserData) {
+            CakeLog::error("[LdapAuth] LDAP get user entries failed: " . ldap_error($ldapconn));
+            throw new UnauthorizedException(__('User could not be authenticated by LDAP.'));
+        }
+
+        return $ldapUserData;
     }
 
     /*
      * Retrieve a user by validating the request data
      */
-    public function getUser(CakeRequest $request)
+    public function getUser($request)
     {
         if (!array_key_exists("User", $request->data)) {
             return false;
@@ -134,31 +155,25 @@ class LdapAuthenticate extends BaseAuthenticate
         $password = $userFields['password'];
 
         CakeLog::debug("[LdapAuth] Login attempt with email: $email");
-        $this->settings['fields'] = array('username' => "email");
-
-
-        $filter = '(' . self::$conf['ldapSearchAttribute'] . '=' . $email . ')';
-        if (!empty(self::$conf['ldapSearchFilter'])) {
-            $filter =  '(&' . self::$conf['ldapSearchFilter'] . ')' . $filter;
-        }
+        $this->settings['fields'] = ["username" => "email"];
 
         $ldapconn = $this->ldapConnect();
 
-        $ldapUser = ldap_search($ldapconn, self::$conf['ldapDn'], $filter, ['uid', 'mail']);
+        $ldapUserData = $this->getLdapUserData($ldapconn, $email);
 
-        if (!$ldapUser) {
-            CakeLog::error("[LdapAuth] LDAP user search failed: " . ldap_error($ldapconn));
-            return false;
+        if ($ldapUserData['count'] == 0) {
+            // If the user is not found in LDAP, try to authenticate against the local database if `mixedAuth` is enabled
+            if (self::$conf['mixedAuth'] == true) {
+                $this->settings['fields'] += ["password" => "password"];
+                $this->settings['passwordHasher'] = "BlowfishConstant";
+                return $this->_findUser($email, $password);
+            } else {
+                CakeLog::error("[LdapAuth] User not found in LDAP.");
+                throw new UnauthorizedException(__('User could not be authenticated by LDAP.'));
+            }
         }
 
-        $ldapUserData = ldap_get_entries($ldapconn, $ldapUser);
-
-        if (!$ldapUserData) {
-            CakeLog::error("[LdapAuth] LDAP get user entries failed: " . ldap_error($ldapconn));
-            return false;
-        }
-
-        // Check user LDAP password
+        // Try to log-in with user LDAP password
         $ldapbind = ldap_bind($ldapconn, $ldapUserData[0]['dn'], $password);
         if (!$ldapbind) {
             CakeLog::error("[LdapAuth] LDAP user authentication failed: " . ldap_error($ldapconn));
@@ -172,7 +187,7 @@ class LdapAuthenticate extends BaseAuthenticate
             $mispUsername = $this->getEmailAddress(self::$conf['ldapEmailField'], $ldapUserData);
         } else {
             CakeLog::error("[LdapAuth] User not found in LDAP.");
-            return false;
+            throw new UnauthorizedException(__('User could not be authenticated by LDAP.'));
         }
 
         // Find user with real username (mail)
@@ -186,35 +201,47 @@ class LdapAuthenticate extends BaseAuthenticate
         $userModel = ClassRegistry::init($this->settings['userModel']);
         $org_id = self::$conf['ldapDefaultOrg'];
 
-        // If not in config, take first local org
+        // If not in config, take first local organisation
         if (!isset($org_id)) {
             $firstOrg = $userModel->Organisation->find(
                 'first',
-                array(
-                    'conditions' => array(
+                [
+                    'conditions' => [
                         'Organisation.local' => true
-                    ),
+                    ],
                     'order' => 'Organisation.id ASC'
-                )
+                ]
             );
             $org_id = $firstOrg['Organisation']['id'];
         }
 
-        // Set role_id depending on group membership
-        $roleIds = self::$conf['ldapDefaultRoleId'];
-        if (is_array($roleIds)) {
-            foreach ($roleIds as $key => $id) {
-                if ($this->isUserMemberOf($key, $ldapUserData)) {
-                    $roleId = $roleIds[$key];
+        // Set role_id based on group membership or default role
+        if (is_array(self::$conf['ldapDefaultRoleId'])) {
+            // Get user memberships
+            $groups = $this->getUserMemberships($ldapconn, $ldapUserData);
+
+            // Find the role ID if the user belongs to any of the specified groups
+            $roleId = null;
+            foreach ($groups as $group) {
+                if (isset(self::$conf['ldapDefaultRoleId'][$group])) {
+                    $roleId = self::$conf['ldapDefaultRoleId'][$group];
+                    break;
                 }
             }
+
+            // Disable user if no valid role is found
+            if ($user && !$roleId) {
+                CakeLog::debug("[LdapAuth] User has no valid role anymore, disabling user.");
+                $this->disableUser($mispUsername);
+                throw new UnauthorizedException(__('User could not be authenticated by LDAP.'));
+            }
         } else {
-            $roleId = $roleIds;
+            $roleId = self::$conf['ldapDefaultRoleId'];
         }
 
         if (!$user) {
-            // create user
-            $userData = array('User' => array(
+            // Create user
+            $userData = ['User' => [
                 'email' => $mispUsername,
                 'org_id' => $org_id,
                 'password' => '',
@@ -223,23 +250,16 @@ class LdapAuthenticate extends BaseAuthenticate
                 'nids_sid' => 4000000,
                 'newsread' => 0,
                 'role_id' => $roleId,
-                'change_pw' => 0
-            ));
-            // save user
+                'change_pw' => 0,
+            ]];
             $userModel->save($userData, false);
         } else {
-            if (!isset($roleId)) {
-                // User has no role anymore, disable user
-                $user['disabled'] = 1;
-                return false;
-            } else {
-                // Update existing user
-                $user['email'] = $mispUsername;
-                $user['org_id'] = $org_id;
-                $user['role_id'] = $roleId;
-                # Reenable user in case it has been disabled
-                $user['disabled'] = 0;
-            }
+            // Update existing user
+            $user['email'] = $mispUsername;
+            $user['org_id'] = $org_id;
+            $user['role_id'] = $roleId;
+            # Reenable user in case it has been disabled
+            $user['disabled'] = 0;
 
             $userModel->save($user, false);
         }
@@ -247,9 +267,5 @@ class LdapAuthenticate extends BaseAuthenticate
         return $this->_findUser(
             $mispUsername
         );
-
-        # TODO: mixedAuth, check LinOTPAuthenticate
-
-        return $ldapUserData;
     }
 }
