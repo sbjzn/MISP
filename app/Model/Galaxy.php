@@ -1022,6 +1022,56 @@ class Galaxy extends AppModel
         return $galaxies;
     }
 
+    public function getUnknownClustersDetails(): array
+    {
+        $allGalaxyTags = $this->GalaxyCluster->Tag->find('list', [
+            'recursive' => -1,
+            'conditions' => [
+                'is_galaxy' => true,
+            ],
+            'fields' => ['name'],
+        ]);
+        $allCreatedClusterTags = $this->GalaxyCluster->find('list', [
+            'recursive' => -1,
+            'conditions' => [],
+            'fields' => ['tag_name'],
+            'joins' => [
+                [
+                    'table' => 'tags',
+                    'alias' => 'Tag',
+                    'type' => 'INNER',
+                    'conditions' => [
+                        'Tag.name = GalaxyCluster.tag_name',
+                    ],
+                ]
+            ]
+        ]);
+        $flippedCreatedClusterTags = array_flip($allCreatedClusterTags);
+        $count = [
+            'unknownCustomClusters' => 0,
+            'unknownCustomClustersSamples' => [],
+            'unknownDefaultClusters' => 0,
+            'unknownDefaultClustersSamples' => [],
+        ];
+        foreach ($allGalaxyTags as $tagName) {
+            if (empty($flippedCreatedClusterTags[$tagName])) {
+                if (!preg_match($this->GalaxyCluster->Tag::RE_CUSTOM_CLUSTER_FROM_DEFAULT_GALAXY, $tagName)) {
+                    $count['unknownCustomClusters'] += 1;
+                    if (count($count['unknownCustomClustersSamples']) < 5) {
+                        $count['unknownCustomClustersSamples'][] = $tagName;
+                    }
+                } else {
+                    $count['unknownDefaultClusters'] += 1;
+                    if (count($count['unknownDefaultClustersSamples']) < 5) {
+                        $count['unknownDefaultClustersSamples'][] = $tagName;
+                    }
+                }
+            }
+        }
+        $count['unknownClusters'] = $count['unknownCustomClusters'] + $count['unknownDefaultClusters'];
+        return $count;
+    }
+
     public function getMatrix($user, $galaxy_id, $scores=[])
     {
         $sectionInEnterprise = ['attack-PRE', 'attack-Windows', 'attack-Linux', 'attack-macOS', 'attack-Office-365', 'attack-Azure-AD', 'attack-Google-Workspace', 'attack-SaaS', 'attack-IaaS', 'attack-Network', 'attack-Containers'];
