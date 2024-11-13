@@ -2481,7 +2481,7 @@ class UsersController extends AppController
             }
             $this->set('pickingMode', false);
             if ($matrixData['galaxy']['id'] == $mitre_galaxy_id) {
-                $this->set('defaultTabName', "mitre-attack");
+                $this->set('defaultTabName', "attack-enterprise");
                 $this->set('removeTrailling', 2);
             }
 
