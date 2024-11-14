@@ -229,7 +229,7 @@ sudo chown -R ${APACHE_USER}:${APACHE_USER} /var/www/.cache/  &>> $logfile
 
 curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php &>> $logfile
 COMPOSER_HASH=`curl -sS https://composer.github.io/installer.sig`
-php -r "if (hash_file('SHA384', '/tmp/composer-setup.php') === '$HASH') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"  &>> $logfile
+php -r "if (hash_file('SHA384', '/tmp/composer-setup.php') === '$COMPOSER_HASH') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"  &>> $logfile
 sudo php /tmp/composer-setup.php --install-dir=/usr/bin --filename=composer  &>> $logfile
 error_check "Composer installation"
 
