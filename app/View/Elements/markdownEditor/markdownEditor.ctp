@@ -182,6 +182,7 @@
     var saveConfirmMessage = '<?= __('You are about to save the document. Do you wish to proceed?') ?>'
     var saveSuccessMessage = '<?= 'Markdown saved' ?>'
     var saveFailedMessage = '<?= 'Could not save markdown. Reason' ?>'
+    var imgPictureFailedMessage = '<?= 'Could not upload picture. Reason' ?>'
     var savePDFConfirmMessage = '<?= __('In order to save the PDF, you have to set the print destination to `Save as PDF`. Warning: The prefered way to download as PDF is to use the misp-module download.') ?>'
     var confirmationMessageUnsavedChanges = '<?= __('You are about to leave the page with unsaved changes. Do you want to proceed?') ?>'
     var changeDetectedMessage = '<?= __('Unsaved changes') ?>'
@@ -193,6 +194,9 @@
     templateVariables.forEach(entry => {
         templateVariablesProxy[entry.name] = entry.value
     });
+    var markdownOverrideEnabledParsingRules = [<?= Configure::read('MISP.enableEventReportImageParsingRule') === true ? '"image"' : '' ?>]
+    console.log(markdownOverrideEnabledParsingRules);
+    
 </script>
 
 <?php

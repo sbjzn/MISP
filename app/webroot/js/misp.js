@@ -152,7 +152,7 @@ function genericPopup(url, popupTarget, callback) {
 }
 
 function screenshotPopup(url, title) {
-    if (!url.startsWith('data:image/')) {
+    if (!url.startsWith('data:image/') && url.split('.')[1] != 'png') {
         url = url.slice(0, -1);
     }
     url = $('<div>').text(url).html();
@@ -2053,7 +2053,7 @@ function openModal(heading, body, footer, modal_option, css_container, css_body,
     }
     modal_html += '</div>';
     $('body').append($(modal_html));
-    $('#'+modal_id).modal(modal_option !== undefined ? modal_option : {});
+    return $('#'+modal_id).modal(modal_option !== undefined ? modal_option : {});
 }
 
 function resizePopoverBody() {

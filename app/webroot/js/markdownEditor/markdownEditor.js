@@ -13,6 +13,20 @@ var defaultMode = 'viewer'
 var currentMode
 var splitEdit = true
 var noEditorScroll = false // Necessary as onscroll cannot be unbound from CM
+
+var markdownDisabledParsingRules = ['link', 'image']
+var markdownEnabledParsingRules = []
+
+if (markdownOverrideEnabledParsingRules && markdownOverrideEnabledParsingRules.length > 0) {
+    markdownOverrideEnabledParsingRules.forEach((rule) => {
+        markdownEnabledParsingRules.push(rule)
+        const ind = markdownDisabledParsingRules.indexOf(rule)
+        if (ind !== -1) {
+            markdownDisabledParsingRules.splice(ind, 1);
+        }
+    })
+}
+
 $(document).ready(function() {
     $splitContainer = $('.split-container')
     $editorContainer = $('#editor-container')
@@ -128,7 +142,8 @@ function initMarkdownIt() {
         }
     }
     md = window.markdownit('default', mdOptions);
-    md.disable([ 'link', 'image' ])
+    // md.disable([ 'link', 'image' ])
+    md.disable(markdownDisabledParsingRules)
     md.renderer.rules.table_open = function () {
         return '<table class="table table-striped">\n';
     };
@@ -215,6 +230,11 @@ function initCodeMirror() {
             cm.showHint()
         }
     });
+    if (pasteImg !== undefined) {
+        cm.on("paste", function(cm, event) {
+            pasteImg(cm, event)
+        })
+    }
     checkIfFullScreenEnabled()
 }
 

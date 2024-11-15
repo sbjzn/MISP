@@ -6010,6 +6010,14 @@ class Server extends AppModel
                     'type' => 'boolean',
                     'null' => true
                 ),
+                'enableEventReportImageParsingRule' => array(
+                    'level' => 1,
+                    'description' => __('When enabled, Image parsing rule will be enabled and picture will be displayed in the rendered markdown. Even though the Content Security Policy directive might block pictures from outside, be carefull with that setting.'),
+                    'value' => false,
+                    'test' => 'testBool',
+                    'type' => 'boolean',
+                    'null' => true
+                ),
                 'collapse_attribute_in_object' => array(
                     'level' => 1,
                     'description' => __('When enabled, all Attributes contained inside an object will be automatically collapsed when viewing an Event.'),

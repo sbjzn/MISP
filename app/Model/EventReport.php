@@ -1,6 +1,7 @@
 <?php
 App::uses('AppModel', 'Model');
 App::uses('SyncTool', 'Tools');
+App::uses('Folder', 'Utility');
 
 /**
  * @property Event $Event
@@ -74,6 +75,10 @@ class EventReport extends AppModel
             'dependent' => true
         ],
     ];
+
+    const PICTURE_FOLDER_PATH =  APP . 'files/img/eventreports';
+    const REDIS_KEY_PICTURE_ALIAS =  'eventreport_picture_alias';
+    const REDIS_KEY_PICTURE_FILENAME_FROM_ALIAS =  'eventreport_picture_filename_from_alias';
 
     public function beforeValidate($options = array())
     {
@@ -577,12 +582,14 @@ class EventReport extends AppModel
         $this->Galaxy = ClassRegistry::init('Galaxy');
         $allowedGalaxies = $this->Galaxy->getAllowedMatrixGalaxies($user);
         $allowedGalaxies = Hash::combine($allowedGalaxies, '{n}.Galaxy.uuid', '{n}.Galaxy');
+        $pictureAliases = $this->getAllAliases();
         return [
             'attribute' => $attributes,
             'object' => $objects,
             'objectTemplates' => $objectTemplates,
             'galaxymatrix' => $allowedGalaxies,
-            'tagname' => $allTagNames
+            'tagname' => $allTagNames,
+            'picture_aliases' => $pictureAliases,
         ];
     }
 
@@ -1189,5 +1196,242 @@ class EventReport extends AppModel
             }
         }
         return $report;
+    }
+
+    public function uploadPicture($picture, $report, $saveAsAttachmentConfig=false)
+    {
+        $saveResult = [
+            'success' => false,
+            'image_filename' => null,
+            'image_name' => null,
+            'errors' => [],
+        ];
+        if (!isset($picture['size'])) {
+            $saveResult['errors'][] = __('Picture has not size');
+            return $saveResult;
+        }
+
+        $supported_image = ['gif', 'jpg', 'jpeg', 'png', 'svg',];
+
+        if ($picture['size'] > 0 && $picture['error'] == 0) {
+            $extension = pathinfo($picture['name'], PATHINFO_EXTENSION);
+            $pictureUUID = CakeText::uuid();
+            $filename = sprintf('%s.%s', $pictureUUID, $extension);
+
+            if (!in_array($extension, $supported_image)) {
+                $saveResult['errors'][] = __('Invalid file extension, Only images with the following extensions are allowed: ' . implode(',', $supported_image));
+                return $saveResult;
+            }
+            $matches = null;
+            $tmp_name = $picture['tmp_name'];
+            if (preg_match_all('/[\w\/\-\.]*/', $tmp_name, $matches) && file_exists($picture['tmp_name'])) {
+                $tmp_name = $matches[0][0];
+                $imgMime = mime_content_type($tmp_name);
+            } else {
+                $saveResult['errors'][] = __('Invalid file.');
+                return $saveResult;
+            }
+            if ($extension !== 'svg' && (function_exists('exif_imagetype') && !exif_imagetype($picture['tmp_name']))) {
+                $saveResult['errors'][] = __('This is not a valid image format.');
+                return $saveResult;
+            }
+
+            if ($extension === 'svg' && !($imgMime === 'image/svg+xml' || $imgMime === 'image/svg')) {
+                $saveResult['errors'][] = __('This is not a valid SVG image.');
+                return $saveResult;
+            }
+
+            if ($extension === 'svg' && !Configure::read('Security.enable_svg_logos')) {
+                $saveResult['errors'][] = __('Invalid file extension, SVG images are not allowed.');
+                return $saveResult;
+            }
+
+            if (!empty($tmp_name) && is_uploaded_file($tmp_name)) {
+                if (!empty($saveAsAttachmentConfig)) {
+                    $this->MispAttribute = ClassRegistry::init('MispAttribute');
+                    $tmpfile = new File($tmp_name);
+                    $attribute = [
+                        'Attribute' => [
+                            'value' => $filename,
+                            'category' => 'External analysis',
+                            'type' => 'attachment',
+                            'event_id' => $report['EventReport']['event_id'],
+                            'data_raw' => $tmpfile->read(),
+                            'comment' => $saveAsAttachmentConfig['comment'],
+                            'to_ids' => 0,
+                            'distribution' => $saveAsAttachmentConfig['distribution'],
+                            'sharing_group_id' => isset($saveAsAttachmentConfig['sharing_group_id']) ? $saveAsAttachmentConfig['sharing_group_id'] : 0,
+                        ]
+                    ];
+                    $this->MispAttribute->create();
+                    $attributeSaveResult = $this->MispAttribute->save($attribute);
+                    if (!empty($attributeSaveResult)) {
+                        $saveResult['success'] = true;
+                        $saveResult['attribute_uuid'] = $attributeSaveResult['Attribute']['uuid'];
+                    } else {
+                        $saveResult['errors'][] = __('Could not create the Attribute');
+                    }
+                } else {
+                    $pictureFolder = new Folder(self::PICTURE_FOLDER_PATH);
+                    if (is_null($pictureFolder->path)) {
+                        $pictureFolder->create(self::PICTURE_FOLDER_PATH, 0770);
+                    }
+                    $success = move_uploaded_file($tmp_name, self::PICTURE_FOLDER_PATH . '/' . $filename);
+                    if ($success) {
+                        $saveResult['success'] = true;
+                        $saveResult['image_filename'] = $filename;
+                        $saveResult['image_name'] = $picture['name'];
+                    } else {
+                        $saveResult['errors'][] = __('Could not move file');
+                    }
+                }
+                return $saveResult;
+            }
+            $saveResult['errors'][] = __('File was not uploaded correctly');
+            return $saveResult;
+        }
+    }
+
+    public function getPicture($filename)
+    {
+        $imageFromAlias = $this->getImageFromAlias($filename);
+        if (!empty($imageFromAlias)) {
+            $filename = $imageFromAlias;
+        }
+        $filepath = self::PICTURE_FOLDER_PATH . '/' . $filename;
+        $file = new File($filepath);
+        if (!is_file($file->path)) {
+            throw new NotFoundException("File '$filepath' does not exist.");
+        }
+        return [
+            'filename' => $file->name,
+            'file' => $file,
+        ];
+    }
+
+    public function collectImportedPicturesStats()
+    {
+        $pictureFolder = new Folder(self::PICTURE_FOLDER_PATH);
+        $files = $pictureFolder->find();
+        $fileReferenced = [];
+        $fileNotReferenced = [];
+        $aliases = [];
+
+        foreach ($files as $filename) {
+            // check if this file is used in at least one report
+            $reportCount = $this->find('count', [
+                'recursive' => -1,
+                'conditions' => [
+                    'content LIKE' => sprintf('%%/eventReports/viewPicture/%s%%', $filename)
+                ]
+            ]);
+            if (empty($reportCount)) {
+                $fileNotReferenced[] = $filename;
+            } else {
+                $fileReferenced[$filename] = $reportCount;
+            }
+            $aliases[$filename] = $this->getAliasForImage($filename);
+        }
+        return [
+            'all_files' => $files,
+            'file_referenced_count' => $fileReferenced,
+            'file_not_referenced' => $fileNotReferenced,
+            'picture_aliases' => $aliases,
+        ];
+    }
+
+    public function purgeUnusedPictures()
+    {
+        $pictureFolder = new Folder(self::PICTURE_FOLDER_PATH);
+        $files = $pictureFolder->find();
+        foreach ($files as $filename) {
+            // check if this file is used in at least one report
+            $reportCount = $this->find('count', [
+                'recursive' => -1,
+                'conditions' => [
+                    'content LIKE' => sprintf('%%/eventReports/viewPicture/%s%%', $filename)
+                ]
+            ]);
+            if (empty($reportCount)) {
+               $this->purgeImage($filename);
+            }
+        }
+    }
+
+    public function purgeImage($filename)
+    {
+        try {
+            $redis = $this->setupRedisWithException();
+        } catch (Exception $e) {
+            $redis = null;
+        }
+        $alias = $this->getAliasForImage($filename);
+        if (!is_null($redis)) {
+            $redis->del(sprintf('%s:%s', self::REDIS_KEY_PICTURE_ALIAS, $filename));
+            $redis->del(sprintf('%s:%s', self::REDIS_KEY_PICTURE_FILENAME_FROM_ALIAS, $alias));
+        }
+        $file = new File(self::PICTURE_FOLDER_PATH . '/' . $filename);
+        $file->delete();
+    }
+
+    public function setFileAlias($data): array
+    {
+        $errors = [];
+        $redis = $this->setupRedisWithException();
+        $filenameForNewAlias = $redis->exists(sprintf('%s:%s', self::REDIS_KEY_PICTURE_FILENAME_FROM_ALIAS, $data['alias']));
+        if (!empty($filenameForNewAlias)) {
+            $errors[] = _('This alias is already in used');
+            return $errors;
+        }
+        $oldAlias = $redis->get(sprintf('%s:%s', self::REDIS_KEY_PICTURE_ALIAS, $data['filename']));
+        if (!empty($oldAlias)) {
+            $redis->del(sprintf('%s:%s', self::REDIS_KEY_PICTURE_FILENAME_FROM_ALIAS, $oldAlias));
+        }
+        $redis->set(sprintf('%s:%s', self::REDIS_KEY_PICTURE_ALIAS, $data['filename']), $data['alias']);
+        $redis->set(sprintf('%s:%s', self::REDIS_KEY_PICTURE_FILENAME_FROM_ALIAS, $data['alias']), $data['filename']);
+        return $errors;
+    }
+
+    public function getAllAliases()
+    {
+        try {
+            $redis = $this->setupRedisWithException();
+        } catch (Exception $e) {
+            $redis = null;
+            return null;
+        }
+        $allKeys = $redis->keys(sprintf('%s:*', self::REDIS_KEY_PICTURE_ALIAS));
+        $pipeline = $redis->pipeline();
+        foreach ($allKeys as $key) {
+            $pipeline->get($key);
+        }
+        $allAliases = $pipeline->exec();
+        return $allAliases;
+    }
+
+    public function getAliasForImage($filename)
+    {
+        if (!isset($this->redis)) {
+            try {
+                $this->redis = $this->setupRedisWithException();
+            } catch (Exception $e) {
+                $this->redis = null;
+                return null;
+            }
+        }
+        return $this->redis->get(sprintf('%s:%s', self::REDIS_KEY_PICTURE_ALIAS, $filename));
+    }
+
+    public function getImageFromAlias($alias)
+    {
+        if (!isset($this->redis)) {
+            try {
+                $this->redis = $this->setupRedisWithException();
+            } catch (Exception $e) {
+                $this->redis = null;
+                return null;
+            }
+        }
+        return $this->redis->get(sprintf('%s:%s', self::REDIS_KEY_PICTURE_FILENAME_FROM_ALIAS, $alias));
     }
 }

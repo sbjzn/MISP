@@ -500,6 +500,13 @@ $divider = '<li class="divider"></li>';
                             ),
                         ));
                     }
+                    if ($isSiteAdmin) {
+                        echo $this->element('/genericElements/SideMenu/side_menu_link', array(
+                            'element_id' => 'managed_imported_pictures',
+                            'url' => '/eventReports/managedImportedPictures',
+                            'text' => __('Managed Imported Pictures')
+                        ));
+                    }
                     if ($menuItem === 'view' || $menuItem === 'edit') {
                         echo $this->element('/genericElements/SideMenu/side_menu_link', array(
                             'element_id' => 'view',

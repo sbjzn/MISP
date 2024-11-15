@@ -259,6 +259,11 @@ class ACLComponent extends Component
             'downloadAsPDF' => ['*'],
             'addTag' => ['perm_tagger'],
             'removeTag' => ['perm_tagger'],
+            'uploadPicture' => ['perm_add'],
+            'viewPicture' => ['*'],
+            'managedImportedPictures' => [],
+            'purgeUnusedPictures' => [],
+            'setFileAlias' => []
         ),
         'events' => array(
             'add' => array('perm_add'),
