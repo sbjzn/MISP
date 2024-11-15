@@ -1005,7 +1005,7 @@ function replaceMISPElementByTheirValue(raw) {
     var match, replacement, element
     var final = ''
     var authorizedMISPElements = ['attribute', 'object', 'tag']
-    var reMISPElement = RegExp('@\\[(?<scope>' + authorizedMISPElements.join('|') + ')\\]\\((?<elementid>[^\\)]+)\\)', 'g');
+    var reMISPElement = RegExp('@!?\\[(?<scope>' + authorizedMISPElements.join('|') + ')\\]\\((?<elementid>[^\\)]+)\\)', 'g');
     var offset = 0
     while ((match = reMISPElement.exec(raw)) !== null) {
         element = proxyMISPElements[match.groups.scope][match.groups.elementid]
