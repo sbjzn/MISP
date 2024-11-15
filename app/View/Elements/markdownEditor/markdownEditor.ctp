@@ -62,9 +62,16 @@
                         <?= __('Download') ?>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a tabindex="-1" href="#" onclick="downloadMarkdown('pdf-module', <?= h($report['EventReport']['id']) ?>)">
+                        <li
+                            class="<?= empty($isDownloadAsPDFModuleAvailable) ? 'disabled' : '' ?>">
+                            <a tabindex="-1" href="#" onclick="<?= !empty($isDownloadAsPDFModuleAvailable) ? sprintf("downloadMarkdown('pdf-module', %s)", h($report['EventReport']['id'])) : '' ?>">
                             <span class="icon"><i class="<?= $this->FontAwesome->getClass('file-pdf') ?>"></i></span>
-                            <?= __('Download PDF (via misp-module)') ?>
+                            <?php if (!empty($isDownloadAsPDFModuleAvailable)): ?>
+                                <?= __('Download PDF (via misp-module)') ?>
+                            <?php else: ?>
+                                <span style="text-decoration: line-through;"><?= __('Download PDF (via misp-module)') ?></span>
+                                <i class="<?= $this->FontAwesome->getClass('info-circle') ?>" title="<?= __('Module `convert_markdown_to_pdf` not available') ?>"></i>
+                            <?php endif; ?>
                         </a></li>
                         <li><a tabindex="-1" href="#" onclick="downloadMarkdown('pdf-print')">
                             <span class="icon"><i class="<?= $this->FontAwesome->getClass('file-pdf') ?>"></i></span>
