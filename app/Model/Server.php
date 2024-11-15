@@ -3802,13 +3802,16 @@ class Server extends AppModel
             }
             $entry = $worker['type'] === 'regular' ? $worker['queue'] : $worker['type'];
             $correctUser = ($currentUser === $worker['user']);
+            if ($worker['user'] === '') {
+                $correctUser = 'unknown';
+            }
             if ($procAccessible) {
                 $alive = $correctUser && file_exists("/proc/$pid");
             } else {
                 $alive = 'N/A';
             }
             $ok = true;
-            if (!$alive || !$correctUser) {
+            if (!$alive || $correctUser === false) {
                 $ok = false;
                 $workerIssueCount++;
             }
