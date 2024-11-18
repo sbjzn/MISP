@@ -1549,7 +1549,7 @@ class AttributesController extends AppController
 
             $this->Session->write('search_attributes_filters', null);
         }
-        if (!empty($filters)) {
+        if (!empty($filters) || $this->request->is('post')) {
             $filters['includeCorrelations'] = 1;
             $params = $this->MispAttribute->restSearch($user, 'json', $filters, true);
             if (!isset($params['conditions']['Attribute.deleted'])) {
