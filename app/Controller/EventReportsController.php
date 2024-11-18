@@ -359,6 +359,7 @@ class EventReportsController extends AppController
                     $canModify = false;
                 }
                 $this->set('canModify', $canModify);
+                $this->set('mayModify', $canModify);
                 $this->set('extendedEvent', !empty($filters['extended_event']));
                 $this->set('extendingEvent', !empty($filters['extending_event']));
                 $fetcherModule = $this->EventReport->isFetchURLModuleEnabled();
@@ -366,6 +367,8 @@ class EventReportsController extends AppController
                 $this->render('ajax/indexForEvent');
             } else {
                 $this->set('title_for_layout', __('Event Reports'));
+                $this->set('canModify', false);
+                $this->set('mayModify', false);
             }
         }
     }
@@ -583,6 +586,87 @@ class EventReportsController extends AppController
         }
     }
 
+    public function uploadPicture($reportId)
+    {
+        if (!$this->request->is('ajax')) {
+            throw new MethodNotAllowedException(__('This function can only be reached via AJAX.'));
+        } else {
+            $report = $this->EventReport->fetchIfAuthorized($this->Auth->user(), $reportId, 'edit', true, false);
+            if ($this->request->is('post')) {
+                $this->loadModel('MispAttribute');
+                $picture = $this->request->data['EventReport']['picture'];
+                $saveAsAttachment = !empty($this->request->data['EventReport']['save_as_attachment']);
+                $saveAsAttachmentConfig = false;
+                if ($saveAsAttachment) {
+                    $saveAsAttachmentConfig['comment'] = $this->request->data['EventReport']['comment'] ?? __('Imported via Event Report');
+                    $saveAsAttachmentConfig['distribution'] = $this->request->data['EventReport']['distribution'] ?? $this->MispAttribute->defaultDistribution();
+                }
+                $uploadResult = $this->EventReport->uploadPicture($picture, $report, $saveAsAttachmentConfig);
+                if ($uploadResult['success']) {
+                    $successMessage = __('Successfully uploaded image');
+                    return $this->__getSuccessResponseBasedOnContext($successMessage, $uploadResult, 'uploadPicture', $reportId);
+                } else {
+                    $errorMessage = __('Could not upload image. Reasons: %s', implode(', ', $uploadResult['errors']));
+                    return $this->__getFailResponseBasedOnContext($errorMessage, [], 'uploadPicture', $reportId);
+                }
+            }
+            $this->layout = false;
+            $this->set('report_id', $reportId);
+            $this->__injectDistributionLevelToViewContext();
+            $this->render('ajax/uploadPicture');
+        }
+    }
+
+    /**
+     * No real ACL. If someone know the UUID, he can get the picture
+     */
+    public function viewPicture($filename)
+    {
+        $this->_closeSession();
+        $image = $this->EventReport->getPicture($filename);
+        $extension = strtolower(pathinfo($image['filename'], PATHINFO_EXTENSION));
+        return $this->RestResponse->sendFile($image['file'], $extension);
+    }
+
+    public function managedImportedPictures()
+    {
+        $importedPictureStats = $this->EventReport->collectImportedPicturesStats();
+        $tableData = [];
+        foreach ($importedPictureStats['all_files'] as $filename) {
+            $referenceCount = !empty($importedPictureStats['file_referenced_count'][$filename]) ? $importedPictureStats['file_referenced_count'][$filename] : 0;
+            $alias = $importedPictureStats['picture_aliases'][$filename];
+            $tableData[] = [
+                'filename' => $filename,
+                'reference_count' => $referenceCount,
+                'is_referenced' => $referenceCount > 0,
+                'alias' => $alias,
+            ];
+        }
+        $this->set('data', $tableData);
+    }
+
+    public function purgeUnusedPictures()
+    {
+        $this->EventReport->purgeUnusedPictures();
+        $message = __('Purged all unused pictures');
+        return $this->__getSuccessResponseBasedOnContext($message, null, 'purgeUnusedPictures');
+    }
+
+    public function setFileAlias()
+    {
+        $this->render('ajax/setFileAlias');
+        if ($this->request->is('post')) {
+            $errors = $this->EventReport->setFileAlias($this->request->data['EventReport']);
+            if (empty($errors)) {
+                $successMessage = __('Success settings alias');
+                return $this->__getSuccessResponseBasedOnContext($successMessage, [], 'setFileAlias', $this->request->data['EventReport']['filename']);
+            } else {
+                $errorMessage = __('Error while settings alias. Reasons: ' . implode(',', $errors));
+                return $this->__getFailResponseBasedOnContext($errorMessage, [], 'setFileAlias', $this->request->data['EventReport']['filename']);
+            }
+        }
+    }
+
     public function configureTemplateVariable()
     {
         if (!$this->request->is('ajax')) {
@@ -618,6 +702,17 @@ class EventReportsController extends AppController
 
     public function downloadAsPDF($reportId)
     {
+        $this->__isDownloadAsPDFModuleAvailable();
+        $report = $this->EventReport->simpleFetchById($this->Auth->user(), $reportId);
+        $pdfFile = $this->EventReport->convertToPDF($this->Auth->user(), $report);
+        $fileExt = 'pdf';
+        $name = sprintf('%s_%s', $report['EventReport']['id'], $report['EventReport']['name']);
+        $filename = sprintf('%s_%s', $name, date("c"));
+        return $this->RestResponse->sendStringAsFile($pdfFile, $fileExt, $filename . '.' . $fileExt);
+    }
+
+    private function __isDownloadAsPDFModuleAvailable()
+    {
         $moduleName = 'convert_markdown_to_pdf';
         $this->loadModel('Module');
         $module = $this->Module->getEnabledModule($moduleName, 'expansion');
@@ -627,16 +722,7 @@ class EventReportsController extends AppController
         if (!$this->Module->canUse($this->Auth->user(), 'Enrichment', $module)) {
             throw new MethodNotAllowedException('Module not found or not available.');
         }
-
-        $report = $this->EventReport->simpleFetchById($this->Auth->user(), $reportId);
-        $content = $report['EventReport']['content'];
-        $contentWithTemplateVars = $this->EventReport->replaceWithTemplateVars($content, $this->Auth->user());
-        $contentWithVarsUnderGFM = $this->EventReport->replaceMISPElementByTheirValue($contentWithTemplateVars, $report['EventReport']['event_id'], $this->Auth->user());
-        $pdfFile = $this->EventReport->convertToPDF($contentWithVarsUnderGFM);
-        $fileExt = 'pdf';
-        $name = sprintf('%s_%s', $report['EventReport']['id'], $report['EventReport']['name']);
-        $filename = sprintf('%s_%s', $name, date("c"));
-        return $this->RestResponse->sendStringAsFile($pdfFile, $fileExt, $filename . '.' . $fileExt);
+        return true;
     }
 
     private function __generateIndexConditions($filters = [])
@@ -765,11 +851,18 @@ class EventReportsController extends AppController
     {
         $canEdit = $this->ACL->canEditEventReport($user, $report);
         $this->set('canEdit', $canEdit);
+        try {
+            $isDownloadAsPDFModuleAvailable = $this->__isDownloadAsPDFModuleAvailable();
+        } catch (MethodNotAllowedException $e) {
+            $isDownloadAsPDFModuleAvailable = false;
+        }
+        $this->set('isDownloadAsPDFModuleAvailable', $isDownloadAsPDFModuleAvailable);
     }
 
     private function __injectTemplateVariables(array $user)
     {
         $templateVariables = $this->User->UserSetting->getValueForUser($user['id'], 'eventreport_template_variables');
+        $templateVariables = is_null($templateVariables) ? [] : $templateVariables;
         $this->set('templateVariables', $templateVariables);
     }
 

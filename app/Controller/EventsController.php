@@ -1235,6 +1235,12 @@ class EventsController extends AppController
         } else {
             $this->set('extended', 0);
         }
+        if (!empty($filters['extending'])) {
+            $conditions['extending'] = 1;
+            $this->set('extending', 1);
+        } else {
+            $this->set('extending', 0);
+        }
         if (!empty($filters['overrideLimit'])) {
             $conditions['overrideLimit'] = 1;
         }
@@ -5185,6 +5191,7 @@ class EventsController extends AppController
         $this->set('galaxy_id', $galaxy_id);
         $this->set('eventId', $eventId);
         $this->set('extended', $extended);
+        $this->set('extending', $extending);
         $this->set('target_type', $scope);
         $this->set('columnOrders', $killChainOrders);
         $this->set('tabs', $tabs);
