@@ -161,6 +161,9 @@ function pasteImg(cm, event) {
     const dT = event.clipboardData || window.clipboardData;
     let fileList = dT.files;
     // For now, only allow pasting one picture at a time
+    if (!fileList[0]) {
+        return
+    }
     const dataTransfert = new DataTransfer()
     dataTransfert.items.add(fileList[0])
     fileList = dataTransfert.files
