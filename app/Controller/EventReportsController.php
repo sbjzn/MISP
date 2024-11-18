@@ -652,6 +652,20 @@ class EventReportsController extends AppController
         return $this->__getSuccessResponseBasedOnContext($message, null, 'purgeUnusedPictures');
     }
 
+    public function deletePicture($filename)
+    {
+        if ($this->request->is('post')) {
+            $deletionSuccess = $this->EventReport->purgeImage($filename);
+            if ($deletionSuccess) {
+                $successMessage = __('Success deleting picture');
+                return $this->__getSuccessResponseBasedOnContext($successMessage, [], 'deletePicture', $filename, ['controller' => 'eventReports', 'action' => 'managedImportedPictures']);
+            } else {
+                $errorMessage = __('Error while deleting picture');
+                return $this->__getFailResponseBasedOnContext($errorMessage, [], 'deletePicture', $filename, ['controller' => 'eventReports', 'action' => 'managedImportedPictures']);
+            }
+        }
+    }
+
     public function setFileAlias()
     {
         $this->render('ajax/setFileAlias');

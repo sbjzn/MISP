@@ -262,6 +262,7 @@ class ACLComponent extends Component
             'uploadPicture' => ['perm_add'],
             'viewPicture' => ['*'],
             'managedImportedPictures' => [],
+            'deletePicture' => [],
             'purgeUnusedPictures' => [],
             'setFileAlias' => []
         ),

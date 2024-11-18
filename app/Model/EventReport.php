@@ -1512,6 +1512,7 @@ class EventReport extends AppModel
 
     public function purgeImage($filename)
     {
+        $filename = basename($filename);
         try {
             $redis = $this->setupRedisWithException();
         } catch (Exception $e) {
@@ -1523,7 +1524,7 @@ class EventReport extends AppModel
             $redis->del(sprintf('%s:%s', self::REDIS_KEY_PICTURE_FILENAME_FROM_ALIAS, $alias));
         }
         $file = new File(self::PICTURE_FOLDER_PATH . '/' . $filename);
-        $file->delete();
+        return $file->delete();
     }
 
     public function setFileAlias($data): array

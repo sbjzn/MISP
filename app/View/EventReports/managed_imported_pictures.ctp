@@ -60,9 +60,13 @@
                 [
                     'title' => __('Delete'),
                     'icon' => 'trash',
-                    'onclick' => 'simplePopup(\'' . $baseurl . '/event_reports/delete/[onclick_params_data_path]\');',
-                    'onclick_params_data_path' => 'filename',
-                    'requirement' => $me['Role']['perm_site_admin']
+                    'url' => $baseurl . '/event_reports/deletePicture',
+                    'url_params_data_paths' => array(
+                        'filename'
+                    ),
+                    'postLink' => true,
+                    'postLinkConfirm' => __('Are you sure you want to delete this picture?'),
+                    'requirements' => $me['Role']['perm_site_admin'],
                 ],
             ]
         ]
