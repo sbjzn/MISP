@@ -31,6 +31,14 @@ if (markdownOverrideEnabledParsingRules === undefined) {
     var markdownOverrideEnabledParsingRules = []
 }
 var currentFileList = null
+const reader = new FileReader()
+reader.addEventListener(
+    "load",
+    () => {
+      $('#pastedPicturePreview')[0].src = reader.result;
+    },
+    false,
+);
 
 var dotTemplateAttribute = doT.template("<span class=\"misp-element-wrapper attribute\" data-scope=\"{{=it.scope}}\" data-elementid=\"{{=it.elementid}}\"><span class=\"bold\"><span class=\"attr-type\"><span>{{=it.type}}</span></span><span class=\"blue\"><span class=\"attr-value\"><span>{{=it.value}}</span></span></span></span></span>");
 var dotTemplateAttributePicture = doT.template("<div class=\"misp-picture-wrapper attributePicture\"><img data-scope=\"{{=it.scope}}\" data-elementid=\"{{=it.elementid}}\" href=\"#\" src=\"{{=it.src}}\" alt=\"{{=it.alt}}\" title=\"\"/></div>");
@@ -151,10 +159,14 @@ function insertMISPElementToolbarButtons() {
 
 function pasteImg(cm, event) {
     const dT = event.clipboardData || window.clipboardData;
-    const fileList = dT.files;
+    let fileList = dT.files;
+    // For now, only allow pasting one picture at a time
+    const dataTransfert = new DataTransfer()
+    dataTransfert.items.add(fileList[0])
+    fileList = dataTransfert.files
     if (fileList.length > 0) { // pasting contains a picture to be uploaded
         event.preventDefault();
-        const saveAsAttachment = false;
+        const $picture = $('<div style="display: flex; justify-content: center; align-items: center; margin: 1em; border: 1px solid #aaaaaa99;">').append($('<img id="pastedPicturePreview">'))
         const $checkboxContainer = $('<div>').addClass('checkbox').append(
             $('<input type="checkbox" name="saveAsAttachment" value="1" id="checkboxSaveAsAttachment" checked="checked" onclick="toggleAttributeFormVisibility()">'),
             $('<label for="checkboxSaveAsAttachment">').text('Save the picture as an attachment (create an Attribute).'),
@@ -172,6 +184,7 @@ function pasteImg(cm, event) {
             )
         const $modalBody = $('<div>').append(
             $('<p>').text('You\'re about to include a picture in your report. Would you like to add it as an attachment to the event (This will create an attachment Attribute) or should it be a save as a local image (this will not be synchronized).'),
+            $picture,
             $('<div>').append($checkboxContainer),
             $attributeFormContainer
         )
@@ -179,13 +192,13 @@ function pasteImg(cm, event) {
         var $confirmButton = $('<a href="#" class="btn btn-primary" onclick="confirmPictureSubmission()">Upload picture</a>')
         var $closeButton = $('<a href="#" class="btn" onclick="dismissPictureSubmissionModal()">Close</a>')
         const $footer = $('<div>').css({display: 'flex'}).append($('<span>').css({'margin-left': 'auto'}).append($confirmButton, $closeButton))
-        const confirmModal = openModal('Choose picture import type', $modalBody[0].outerHTML, $footer[0].outerHTML)
+        const confirmModal = openModal('Choose picture import type', $modalBody[0].outerHTML, $footer[0].outerHTML, undefined, undefined, 'max-height: 800px;')
         confirmModal.on('hidden', function () {
             confirmModal.remove()
             currentFileList = null
         })
         confirmModal.on('shown', function () {
-            
+            reader.readAsDataURL(fileList[0])
         })
     }
 }

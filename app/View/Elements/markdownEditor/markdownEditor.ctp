@@ -202,7 +202,6 @@
         templateVariablesProxy[entry.name] = entry.value
     });
     var markdownOverrideEnabledParsingRules = [<?= Configure::read('MISP.enableEventReportImageParsingRule') === true ? '"image"' : '' ?>]
-    console.log(markdownOverrideEnabledParsingRules);
     
 </script>
 
