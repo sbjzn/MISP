@@ -14,7 +14,7 @@ class MISPElementHTMLFormatterTool
                     border-radius: 3px;
                     white-space: nowrap;
                     padding: 0;
-                    font-size: 16px;
+                    font-size: 14px;
                     line-height: 23px;
                     "
             >
@@ -55,7 +55,7 @@ class MISPElementHTMLFormatterTool
                     border-radius: 3px;
                     white-space: nowrap;
                     padding: 0;
-                    font-size: 16px;
+                    font-size: 14px;
                     background-color: #3465a4;"
             >
                 <span
@@ -100,7 +100,7 @@ class MISPElementHTMLFormatterTool
                     border-radius: 3px;
                     white-space: nowrap;
                     padding: 0;
-                    font-size: 16px;
+                    font-size: 14px;
                     background-color: #3465a4;"
             >
                 <span
