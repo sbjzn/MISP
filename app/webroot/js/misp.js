@@ -152,7 +152,7 @@ function genericPopup(url, popupTarget, callback) {
 }
 
 function screenshotPopup(url, title) {
-    if (!url.startsWith('data:image/') && url.split('.')[1] != 'png') {
+    if (!url.startsWith('data:image/') && url.split('.').pop() != 'png') {
         url = url.slice(0, -1);
     }
     url = $('<div>').text(url).html();
