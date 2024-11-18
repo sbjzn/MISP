@@ -704,10 +704,7 @@ class EventReportsController extends AppController
     {
         $this->__isDownloadAsPDFModuleAvailable();
         $report = $this->EventReport->simpleFetchById($this->Auth->user(), $reportId);
-        $content = $report['EventReport']['content'];
-        $contentWithTemplateVars = $this->EventReport->replaceWithTemplateVars($content, $this->Auth->user());
-        $contentWithVarsUnderGFM = $this->EventReport->replaceMISPElementByTheirValue($contentWithTemplateVars, $report['EventReport']['event_id'], $this->Auth->user());
-        $pdfFile = $this->EventReport->convertToPDF($contentWithVarsUnderGFM);
+        $pdfFile = $this->EventReport->convertToPDF($this->Auth->user(), $report);
         $fileExt = 'pdf';
         $name = sprintf('%s_%s', $report['EventReport']['id'], $report['EventReport']['name']);
         $filename = sprintf('%s_%s', $name, date("c"));
