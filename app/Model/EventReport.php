@@ -601,7 +601,7 @@ class EventReport extends AppModel
     {
         $this->UserSetting = ClassRegistry::init('UserSetting');
         $templateVariables = $this->UserSetting->getValueForUser($user['id'], 'eventreport_template_variables');
-        $templateVarProxy = Hash::combine($templateVariables, '{n}.name', '{n}.value');
+        $templateVarProxy = !empty($templateVariables) ? Hash::combine($templateVariables, '{n}.name', '{n}.value') : [];
         foreach ($templateVarProxy as $varName => $replacementValue) {
             $varSyntax = '/{{\s*' . preg_quote($varName, '/') . '\s*}}/';
             $content = preg_replace($varSyntax, $replacementValue, $content);
