@@ -719,7 +719,7 @@ class EventReportsController extends AppController
         if (!Configure::read('Plugin.Enrichment_' . $moduleName . '_enabled')) {
             throw new MethodNotAllowedException('Module not found or not available.');
         }
-        if (!$this->Module->canUse($this->Auth->user(), 'Enrichment', $module)) {
+        if (!$this->Module->canUse($this->Auth->user(), 'Enrichment', ['name' => $module])) {
             throw new MethodNotAllowedException('Module not found or not available.');
         }
         return true;
