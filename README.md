@@ -81,7 +81,8 @@ Core functions
 - **Flexible logging** subsystems to help with the auditing of the system as well as the user-base's actions on the system, with various output formats supported as well as a wide range of transport mechanisms for centralised logging needs.
 - **Customisable RBAC**, allowing configurations of MISP to be run both as a permissive in-house tool as well as tightly regulated community instances.
 - **Information signing and validation** for more diverse and sensitive information sharing communities.
-- **Batteries included**: A long list of tooling for backups, integration with identity providers and authentication systems, information leakage prevention safety nets as well as system monitoring tools.
+- **Batteries included**: A long list of tooling for backups, integration with identity providers and authentication systems, information leakage prevention safety nets (such as [MISP-Guard](https://github.com/MISP/misp-guard)) as well as system monitoring tools.
+- **Open-source commitment**: MISP and its copyright is fully owned by an interlocked license among all contributors, ensuring that no single organisation or company can ever change the license or model of MISP. Users of MISP can rely on the tool never turning into a closed source / proprietary / semi-open multi-tier model tool.
 
 ## Main advantages
 
