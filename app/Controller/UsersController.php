@@ -1278,8 +1278,10 @@ class UsersController extends AppController
     private function _postlogin()
     {
         $authUser = $this->Auth->user();
-        $this->User->extralog($authUser, "login");
-
+        if (empty($authUser['disabled'])) {
+            $this->User->extralog($authUser, "login");
+        }
+        
         $this->User->Behaviors->disable('SysLogLogable.SysLogLogable');
         $user = $this->User->find('first', array(
             'conditions' => array(
@@ -1289,7 +1291,9 @@ class UsersController extends AppController
             'recursive' => -1
         ));
         // update login timestamp and welcome user
-        $this->User->updateLoginTimes($user['User']);
+        if (empty($authUser['disabled'])) {
+            $this->User->updateLoginTimes($user['User']);
+        }
         $this->User->Behaviors->enable('SysLogLogable.SysLogLogable');
 
         $lastUserLogin = $user['User']['last_login'];
