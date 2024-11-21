@@ -16,13 +16,13 @@ class MysqlExtended extends Mysql
     ];
 
     /**
-     * Output MD5 as binary, that is faster and uses less memory
+     * Output SHA1 as binary, that is faster and uses less memory
      * @param string $value
      * @return string
      */
     public function cacheMethodHasher($value)
     {
-        return md5($value, true);
+        return sha1($value, true);
     }
 
     /**
@@ -38,10 +38,9 @@ class MysqlExtended extends Mysql
         $query = array_merge($this->_queryDefaults, $query);
 
         if (!empty($query['joins'])) {
-            $count = count($query['joins']);
-            for ($i = 0; $i < $count; $i++) {
-                if (is_array($query['joins'][$i])) {
-                    $query['joins'][$i] = $this->buildJoinStatement($query['joins'][$i]);
+            foreach ($query['joins'] as &$join) {
+                if (is_array($join)) {
+                    $join = $this->buildJoinStatement($join);
                 }
             }
         }
