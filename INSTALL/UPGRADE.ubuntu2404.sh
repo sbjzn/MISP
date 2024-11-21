@@ -182,19 +182,19 @@ print_status "Installing PECL extensions..."
 
 sudo pecl channel-update pecl.php.net &>> $logfile
 sudo pecl install brotli &>> $logfile
-error_check "PECL brotli extension installation"
+error_check_soft "PECL brotli extension installation"
 sudo pecl install simdjson &>> $logfile
-error_check "PECL simdjson extension installation"
+error_check_soft "PECL simdjson extension installation"
 sudo pecl install zstd &>> $logfile
-error_check "PECL zstd extension installation"
+error_check_soft "PECL zstd extension installation"
 
 if [ "$INSTALL_SSDEEP" = "true" ]; then
     sudo apt install make -y &>> $logfile
-    error_check "The installation of make"
+    error_check_soft "The installation of make"
     git clone --recursive --depth=1 https://github.com/JakubOnderka/pecl-text-ssdeep.git /tmp/pecl-text-ssdeep
-    error_check "Jakub Onderka's PHP8 SSDEEP extension cloning"
+    error_check_soft "Jakub Onderka's PHP8 SSDEEP extension cloning"
     cd /tmp/pecl-text-ssdeep && phpize && ./configure && make && make install
-    error_check "Jakub Onderka's PHP8 SSDEEP extension compilation and installation"
+    error_check_soft "Jakub Onderka's PHP8 SSDEEP extension compilation and installation"
 fi
 
 
