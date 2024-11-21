@@ -249,4 +249,44 @@ class MysqlExtended extends Mysql
 
         return parent::value($data, $column, $null);
     }
+
+    /**
+     * @param $result
+     * @return void
+     */
+    public function fetchVirtualField(&$result)
+    {
+        static $cache;
+
+        if (isset($result[0]) && is_array($result[0])) {
+            foreach ($result[0] as $field => $value) {
+                if (!str_contains($field, $this->virtualFieldSeparator)) {
+                    continue;
+                }
+
+                $virtualFields = $cache[$field] ?? null;
+                if ($virtualFields === null) {
+                    list($alias, $virtual) = explode($this->virtualFieldSeparator, $field);
+
+                    /** @var Model $Model */
+                    $Model = ClassRegistry::getObject($alias);
+                    if ($Model === false) {
+                        return;
+                    }
+
+                    $isVirtualField = $Model->isVirtualField($virtual);
+                    $cache[$field] = $virtualFields = $isVirtualField ? [$alias, $virtual] : false;
+                }
+
+                if ($virtualFields) {
+                    list($alias, $virtual) = $virtualFields;
+                    $result[$alias][$virtual] = $value;
+                    unset($result[0][$field]);
+                }
+            }
+            if (empty($result[0])) {
+                unset($result[0]);
+            }
+        }
+    }
 }
