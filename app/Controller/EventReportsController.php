@@ -677,10 +677,10 @@ class EventReportsController extends AppController
         if ($this->request->is('post')) {
             $errors = $this->EventReport->setFileAlias($this->request->data['EventReport']);
             if (empty($errors)) {
-                $successMessage = __('Success settings alias');
+                $successMessage = __('Alias set successfully');
                 return $this->__getSuccessResponseBasedOnContext($successMessage, [], 'setFileAlias', $this->request->data['EventReport']['filename']);
             } else {
-                $errorMessage = __('Error while settings alias. Reasons: ' . implode(',', $errors));
+                $errorMessage = __('Error while setting alias. Reasons: ' . implode(',', $errors));
                 return $this->__getFailResponseBasedOnContext($errorMessage, [], 'setFileAlias', $this->request->data['EventReport']['filename']);
             }
         }
