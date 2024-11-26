@@ -4244,13 +4244,13 @@ class Event extends AppModel
                         $changed = true;
                     }
                 }
-                $this->Attribute->editAttributeBulk($attributes, $saveResult, $user);
+                $this->Attribute->editAttributeBulk($attributes, $saveResult, $user, $server);
             }
             if (isset($data['Event']['Object'])) {
                 $data['Event']['Object'] = array_values($data['Event']['Object']);
                 foreach ($data['Event']['Object'] as $object) {
                     $nothingToChange = false;
-                    $result = $this->Object->editObject($object, $saveResult, $user, false, $force, $nothingToChange);
+                    $result = $this->Object->editObject($object, $saveResult, $user, false, $force, $nothingToChange, $server);
                     if ($result !== true) {
                         $validationErrors['Object'][] = $result;
                     }

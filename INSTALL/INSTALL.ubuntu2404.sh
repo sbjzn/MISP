@@ -88,6 +88,15 @@ function error_check
     fi
 }
 
+function error_check_soft
+{
+    if [ $? -eq 0 ]; then
+        print_ok "$1 successfully completed."
+    else
+        print_error "$1 failed. Please check $logfile for more details. This is not a blocking failure though, proceeding..."
+    fi
+}
+
 function print_status ()
 {
     echo -e "\x1B[01;34m[STATUS]\x1B[0m $1"
@@ -233,11 +242,11 @@ print_status "Installing PECL extensions..."
 
 sudo pecl channel-update pecl.php.net &>> $logfile || echo "Continuing despite error in updating PECL channel"
 sudo pecl install brotli &>> $logfile
-error_check "PECL brotli extension installation" || echo "Continuing despite error in installing PECL brotli extension"
+error_check_soft "PECL brotli extension installation" || echo "Continuing despite error in installing PECL brotli extension"
 sudo pecl install simdjson &>> $logfile
-error_check "PECL simdjson extension installation" || echo "Continuing despite error in installing PECL simdjson extension"
+error_check_soft "PECL simdjson extension installation" || echo "Continuing despite error in installing PECL simdjson extension"
 sudo pecl install zstd &>> $logfile
-error_check "PECL zstd extension installation" || echo "Continuing despite error in installing PECL zstd extension"
+error_check_soft "PECL zstd extension installation" || echo "Continuing despite error in installing PECL zstd extension"
 
 if [ $INSTALL_SSDEEP == "y" ]; then
     sudo apt install make -y &>> $logfile
@@ -546,6 +555,7 @@ error_check "Background workers setup"
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "SimpleBackgroundJobs.supervisor_port" 9001 &>> $logfile
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "SimpleBackgroundJobs.supervisor_user" ${SUPERVISOR_USER} &>> $logfile
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "SimpleBackgroundJobs.supervisor_password" ${SUPERVISOR_PASSWORD} &>> $logfile
+  sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "SimpleBackgroundJobs.redis_serializer" "JSON" &>> $logfile
 
   # Various plugin sightings settings
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "Plugin.Sightings_policy" 0 &>> $logfile
@@ -581,6 +591,7 @@ error_check "Background workers setup"
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "MISP.redis_port" 6379 &>> $logfile
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "MISP.redis_database" 13 &>> $logfile
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "MISP.redis_password" "" &>> $logfile
+  sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "MISP.redis_serializer" "JSON" &>> $logfile
 
   # Force defaults to make MISP Server Settings less YELLOW
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "MISP.ssdeep_correlation_threshold" 40 &>> $logfile
