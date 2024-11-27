@@ -84,6 +84,12 @@ class EventReport extends AppModel
     const SUPPORTED_IMAGES = ['gif', 'jpg', 'jpeg', 'png', 'svg',];
     private $imageCache = [];
 
+    public function __construct($id = false, $table = null, $ds = null) {
+        parent::__construct();
+        $this->schema();
+        $this->_schema['distribution']['default'] = Configure::read('MISP.default_eventreport_distribution') ?? 5;
+    }
+
     public function beforeValidate($options = array())
     {
         $eventReport = &$this->data['EventReport'];
@@ -99,11 +105,6 @@ class EventReport extends AppModel
         }
         if ($eventReport['distribution'] != 4) {
             $eventReport['sharing_group_id'] = 0;
-        }
-        // Set defaults for when some of the mandatory fields don't have defaults
-        // These fields all have sane defaults either based on another field, or due to server settings
-        if (!isset($eventReport['distribution'])) {
-            $eventReport['distribution'] = is_null(Configure::read('MISP.default_eventreport_distribution')) ? 5 : Configure::read('MISP.default_eventreport_distribution');
         }
         return true;
     }
