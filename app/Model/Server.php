@@ -5685,6 +5685,19 @@ class Server extends AppModel
                         'event' => __('Inherit from event')
                     ),
                 ),
+                'default_analyst_data_distribution' => array(
+                    'level' => 1,
+                    'description' => __('The default distribution setting for analyst-data (notes, opinions, ...) (0-3)'),
+                    'value' => '1',
+                    'test' => 'testForEmpty',
+                    'type' => 'string',
+                    'options' => array(
+                        '0' => __('Your organisation only'),
+                        '1' => __('This community only'),
+                        '2' => __('Connected communities'),
+                        '3' => __('All communities'),
+                    ),
+                ),
                 'default_publish_alert' => array(
                     'level' => 0,
                     'description' => __('The default setting for publish alerts when creating users.'),
