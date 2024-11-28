@@ -57,7 +57,8 @@ class UsersController extends AppController
             'contain' => array(
                 'UserSetting',
                 'Role',
-                'Organisation'
+                'Organisation',
+                'Server'
             )
         ));
         if (empty($user)) {
@@ -94,7 +95,7 @@ class UsersController extends AppController
         $user['User']['password'] = '*****';
         $user['User']['totp'] = '*****';
         $temp = [];
-        $objectsToInclude = array('User', 'Role', 'UserSetting', 'Organisation');
+        $objectsToInclude = array('User', 'Role', 'UserSetting', 'Organisation', 'Server');
         foreach ($objectsToInclude as $objectToInclude) {
             if (isset($user[$objectToInclude])) {
                 $temp[$objectToInclude] = $user[$objectToInclude];
@@ -481,7 +482,8 @@ class UsersController extends AppController
                 ),
                 'contain' => array(
                     'Organisation' => array('id', 'name'),
-                    'Role' => array('id', 'name', 'perm_auth', 'perm_site_admin', 'perm_admin')
+                    'Role' => array('id', 'name', 'perm_auth', 'perm_site_admin', 'perm_admin'),
+                    'Server' => ['id', 'name'],
                 )
             ));
             if (!$this->_isSiteAdmin()) {
@@ -503,6 +505,7 @@ class UsersController extends AppController
             return $this->RestResponse->viewData($users, $this->response->type());
         }
 
+        $this->paginate['contain']['Server'] = ['id', 'name'];
         $this->set('urlparams', $urlParams);
         $this->set('passedArgsArray', $passedArgsArray);
         $this->set('periodic_notifications', $this->User::PERIODIC_NOTIFICATIONS);
@@ -602,7 +605,8 @@ class UsersController extends AppController
             'contain' => [
                 'UserSetting',
                 'Role',
-                'Organisation'
+                'Organisation',
+                'Server',
             ]
         ));
         if (empty($user)) {
