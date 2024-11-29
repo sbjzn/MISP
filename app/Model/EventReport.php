@@ -600,8 +600,8 @@ class EventReport extends AppModel
 
     public function replaceWithTemplateVars($content, $user)
     {
-        $this->UserSetting = ClassRegistry::init('UserSetting');
-        $templateVariables = $this->UserSetting->getValueForUser($user['id'], 'eventreport_template_variables');
+        $this->EventReportTemplateVariable = ClassRegistry::init('EventReportTemplateVariable');
+        $templateVariables = $this->EventReportTemplateVariable->getAll();
         $templateVarProxy = !empty($templateVariables) ? Hash::combine($templateVariables, '{n}.name', '{n}.value') : [];
         foreach ($templateVarProxy as $varName => $replacementValue) {
             $varSyntax = '/{{\s*' . preg_quote($varName, '/') . '\s*}}/';
@@ -1471,11 +1471,13 @@ class EventReport extends AppModel
         $aliases = [];
 
         foreach ($files as $filename) {
+            $theAlias = $this->getAliasForImage($filename);
             // check if this file is used in at least one report
             $reportCount = $this->find('count', [
                 'recursive' => -1,
                 'conditions' => [
-                    'content LIKE' => sprintf('%%/eventReports/viewPicture/%s%%', $filename)
+                    'content LIKE' => sprintf('%%/eventReports/viewPicture/%s%%', $filename),
+                    'content LIKE' => sprintf('%%/eventReports/viewPicture/%s%%', $theAlias),
                 ]
             ]);
             if (empty($reportCount)) {
@@ -1483,7 +1485,7 @@ class EventReport extends AppModel
             } else {
                 $fileReferenced[$filename] = $reportCount;
             }
-            $aliases[$filename] = $this->getAliasForImage($filename);
+            $aliases[$filename] = $theAlias;
         }
         return [
             'all_files' => $files,

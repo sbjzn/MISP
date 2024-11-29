@@ -112,8 +112,10 @@ class AnalystData extends AppModel
         ]);
         $this->Org = ClassRegistry::init('Organisation');
         $this->Orgc = ClassRegistry::init('Organisation');
-        $this->schema();
-        $this->_schema['distribution']['default'] = Configure::read('MISP.default_analyst_data_distribution') ?? 1;
+        if (in_array($this->alias, self::ANALYST_DATA_TYPES)) {
+            $this->schema();
+            $this->_schema['distribution']['default'] = Configure::read('MISP.default_analyst_data_distribution') ?? 1;
+        }
     }
 
     public function afterFind($results, $primary = false)

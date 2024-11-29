@@ -266,6 +266,13 @@ class ACLComponent extends Component
             'purgeUnusedPictures' => [],
             'setFileAlias' => []
         ),
+        'eventReportTemplateVariables' => array(
+            'add' => [],
+            'view' => ['*'],
+            'edit' => [],
+            'delete' => [],
+            'index' => ['*'],
+        ),
         'events' => array(
             'add' => array('perm_add'),
             'addIOC' => array('perm_add'),

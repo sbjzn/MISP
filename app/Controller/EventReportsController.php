@@ -595,8 +595,13 @@ class EventReportsController extends AppController
             if ($this->request->is('post')) {
                 $this->loadModel('MispAttribute');
                 $picture = $this->request->data['EventReport']['picture'];
-                $saveAsAttachment = !empty($this->request->data['EventReport']['save_as_attachment']);
                 $saveAsAttachmentConfig = false;
+                if ($this->Auth->user()['Role']['perm_site_admin']) {
+                    $saveAsAttachment = !empty($this->request->data['EventReport']['save_as_attachment']);
+                } else {
+                    $saveAsAttachment = true;
+                    $saveAsAttachmentConfig = [];
+                }
                 if ($saveAsAttachment) {
                     $saveAsAttachmentConfig['comment'] = $this->request->data['EventReport']['comment'] ?? __('Imported via Event Report');
                     $saveAsAttachmentConfig['distribution'] = $this->request->data['EventReport']['distribution'] ?? $this->MispAttribute->defaultDistribution();
@@ -679,39 +684,6 @@ class EventReportsController extends AppController
                 return $this->__getFailResponseBasedOnContext($errorMessage, [], 'setFileAlias', $this->request->data['EventReport']['filename']);
             }
         }
-    }
-
-    public function configureTemplateVariable()
-    {
-        if (!$this->request->is('ajax')) {
-            throw new MethodNotAllowedException(__('This function can only be reached via AJAX.'));
-        }
-        if ($this->request->is('post')) {
-            if (isset($this->request->data['EventReport'])) {
-                $this->request->data = $this->request->data['EventReport'];
-            }
-            $template_variables = $this->request->data['template_variables'];
-            $template_variables = JsonTool::decode($template_variables);
-            $setting = [
-                'UserSetting' => [
-                    'user_id' => $this->Auth->user('id'),
-                    'setting' => 'eventreport_template_variables',
-                    'value' => $template_variables,
-                ]
-            ];
-            $this->loadModel('UserSetting');
-            $success = $this->UserSetting->setSetting($this->Auth->user(), $setting);
-            if (!empty($success)) {
-                $message = __('Template variables saved');
-                return $this->__getSuccessResponseBasedOnContext($message, null, 'configureTemplateVariable');
-            } else {
-                $message = __('Template variables could not be saved');
-                return $this->__getFailResponseBasedOnContext($message, null, 'configureTemplateVariable');
-            }
-        }
-        $this->layout = false;
-        $this->__injectTemplateVariables($this->Auth->user());
-        $this->render('ajax/configureTemplateVariables');
     }
 
     public function downloadAsPDF($reportId)
@@ -873,10 +845,10 @@ class EventReportsController extends AppController
         $this->set('isDownloadAsPDFModuleAvailable', $isDownloadAsPDFModuleAvailable);
     }
 
-    private function __injectTemplateVariables(array $user)
+    private function __injectTemplateVariables()
     {
-        $templateVariables = $this->User->UserSetting->getValueForUser($user['id'], 'eventreport_template_variables');
-        $templateVariables = is_null($templateVariables) ? [] : $templateVariables;
+        $this->loadModel('EventReportTemplateVariable');
+        $templateVariables = $this->EventReportTemplateVariable->getAll();
         $this->set('templateVariables', $templateVariables);
     }
 
