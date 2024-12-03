@@ -89,8 +89,8 @@ class UserLoginProfile extends AppModel
     public function countryByIp($ip)
     {
         if (class_exists('GeoIp2\Database\Reader')) {
-            $geoDbReader = new GeoIp2\Database\Reader(UserLoginProfile::GEOIP_DB_FILE);
             try {
+                $geoDbReader = new GeoIp2\Database\Reader(UserLoginProfile::GEOIP_DB_FILE);
                 $record = $geoDbReader->country($ip);
                 return $record->country->isoCode;
             } catch (InvalidArgumentException $e) {
