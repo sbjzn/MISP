@@ -185,7 +185,10 @@ class EventReportsController extends AppController
             if ($id === false) {
                 throw new NotFoundException(__('Invalid report'));
             }
-            $report = $this->EventReport->fetchIfAuthorized($this->Auth->user(), $id, 'edit', $throwErrors=true, $full=false);
+            $report = $this->EventReport->fetchIfAuthorized($this->Auth->user(), $id, 'view', $throwErrors=true, $full=false);
+            if (!$this->__canModifyTag($report, $local)) {
+                return new CakeResponse(array('body'=> json_encode(array('saved' => false, 'errors' => 'You don\'t have permission to do that.')), 'status'=>200, 'type' => 'json'));
+            }
             $this->set('local', $local);
             $this->set('object_id', $id);
             $this->set('scope', 'EventReport');
@@ -193,7 +196,10 @@ class EventReportsController extends AppController
             $this->autoRender = false;
             $this->render('/Events/add_tag');
         } else {
-            $report = $this->EventReport->fetchIfAuthorized($this->Auth->user(), $id, 'edit', $throwErrors=true, $full=false);
+            $report = $this->EventReport->fetchIfAuthorized($this->Auth->user(), $id, 'view', $throwErrors=true, $full=false);
+            if (!$this->__canModifyTag($report, $local)) {
+                return new CakeResponse(array('body'=> json_encode(array('saved' => false, 'errors' => 'You don\'t have permission to do that.')), 'status'=>200, 'type' => 'json'));
+            }
             if ($tag_id === false) {
                 if (!isset($this->request->data['EventReport']['tag'])) {
                     throw new NotFoundException(__('Invalid tag'));
@@ -257,7 +263,7 @@ class EventReportsController extends AppController
 
     public function removeTag($id = false, $tag_id = false, $galaxy = false)
     {
-        $report = $this->EventReport->fetchIfAuthorized($this->Auth->user(), $id, 'edit', true, false);
+        $report = $this->EventReport->fetchIfAuthorized($this->Auth->user(), $id, 'view', $throwErrors=true, $full=false);
         if (!$this->request->is('post')) {
             $reportTag = $this->EventReport->EventReportTag->find('first', array(
                 'conditions' => array(
