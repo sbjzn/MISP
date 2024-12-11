@@ -27,16 +27,7 @@ class JsonTool
         if (function_exists('simdjson_decode')) {
             // Use faster version of json_decode from simdjson PHP extension if this extension is installed
             try {
-                $result = simdjson_decode($value, true);
-
-                // simdjson do not deallocate memory automatically, but instead it keeps memory allocated for later usage
-                // this is problematic for long running scripts, so we will deallocate memory if simdjson parsed JSON
-                // bigger than 100 MB
-                if (strlen($value) > 1024 * 1024 * 100 && function_exists('simdjson_cleanup')) {
-                    simdjson_cleanup();
-                }
-
-                return $result;
+                return simdjson_decode($value, true);
             } catch (SimdJsonException $e) {
                 throw new JsonException($e->getMessage(), $e->getCode(), $e);
             }
