@@ -1796,6 +1796,13 @@ class ServersController extends AppController
                     $result['status'] = 8;
                     return new CakeResponse(array('body'=> json_encode($result), 'type' => 'json'));
                 }
+                // Handle 2.5 <-> 2.4 compatibility
+                if ($mismatch && ($version[1] == 4 && $local_version['minor'] == 5) || ($version[1] == 5 && $local_version['minor'] == 4)) {
+                    $mismatch = 'minor_compatible';
+                    if ($version[1] == 4 && $version[2] < 111) {
+                            $mismatch = 'proposal';
+                    }
+                }
                 return $this->RestResponse->viewData([
                     'status' => 1,
                     'local_version' => implode('.', $local_version),
