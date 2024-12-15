@@ -521,8 +521,6 @@ class ACLComponent extends Component
         ),
         'objectTemplates' => array(
             'activate' => array(),
-            'add' => array('perm_object_template'),
-            'edit' => array('perm_object_template'),
             'delete' => array('perm_object_template'),
             'getToggleField' => array(),
             'getRaw' => array('perm_object_template'),
@@ -827,7 +825,6 @@ class ACLComponent extends Component
             'checkAndCorrectPgps' => array(),
             'checkIfLoggedIn' => array('*'),
             'dashboard' => array('*'),
-            'delete' => array('perm_admin'),
             'discardRegistrations' => array(),
             'downloadTerms' => array('*'),
             'edit' => array('self_management_enabled'),
