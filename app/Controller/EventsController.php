@@ -1819,7 +1819,7 @@ class EventsController extends AppController
             $this->__applyQueryString($event, $namedParams['galaxyAttachedAttributes'], 'Tag.name');
         }
         if ($this->_isRest()) {
-            if ($this->RestResponse->isAutomaticTool() && $event['Event']['protected']) {
+            if ($event['Event']['protected']) {
                 $this->RestResponse->signContents = true;
             }
             return $this->__restResponse($event);
@@ -2338,6 +2338,7 @@ class EventsController extends AppController
     {
         if ($this->request->is('post')) {
             $results = array();
+            $fingerprint = null;
             if (!empty($this->request->data)) {
                 if (empty($this->request->data['Event'])) {
                     $this->request->data['Event'] = $this->request->data;
@@ -2368,8 +2369,21 @@ class EventsController extends AppController
                     } else {
                         throw new NotFoundException(__('Invalid file.'));
                     }
+                    if (!empty($this->request->data['Event']['signature'])) {
+                        $signature = $this->request->data['Event']['signature'];
+                        $this->loadModel('CryptographicKey');
+                        $fingerprint = $this->CryptographicKey->validateString($data, $signature, $this->Auth->user());
+                        if (empty($fingerprint)) {
+                            $this->Flash->error(__('The signature could not be validated.'));
+                            $this->redirect(['controller' => 'events', 'action' => 'add_misp_export']);
+                        }
+                    }
                 } else {
                     throw new MethodNotAllowedException(__('No file uploaded.'));
+                }
+
+                if (!empty($this->request->data['Event']['signature'])) {
+
                 }
 
                 $takeOwnership = Configure::read('MISP.take_ownership_xml_import')
@@ -2378,7 +2392,7 @@ class EventsController extends AppController
 
                 $publish = $this->request->data['Event']['publish'] ?? false;
                 try {
-                    $results = $this->Event->addMISPExportFile($this->Auth->user(), $data, $isXml, $takeOwnership, $publish, $allowLockOverride);
+                    $results = $this->Event->addMISPExportFile($this->Auth->user(), $data, $isXml, $takeOwnership, $publish, $allowLockOverride, $fingerprint);
                 } catch (Exception $e) {
                     $this->log("Exception during processing MISP file import: {$e->getMessage()}");
                     $this->Flash->error(__('Could not process MISP export file. %s', $e->getMessage()));

@@ -521,6 +521,7 @@ class Server extends AppModel
                 if ($existingEvent['Event']['protected']) {
                     if (!$eventModel->CryptographicKey->validateProtectedEvent($response->body, $user, $response->getHeader('x-pgp-signature'), $existingEvent)) {
                         $fails[$eventId] = __('Event failed the validation checks. The remote instance claims that the event can be signed with a valid key which is sus.');
+                        return false;
                     }
                 }
                 $result = $eventModel->_edit($event, $user, $existingEvent['Event']['id'], $jobId, $passAlong, $force);
@@ -6440,7 +6441,8 @@ class Server extends AppModel
                     'value' => '/usr/bin/gpg',
                     'test' => 'testForGPGBinary',
                     'type' => 'string',
-                    'cli_only' => 1
+                    'cli_only' => 1,
+                    'null' => true
                 ),
                 'onlyencrypted' => array(
                     'level' => 0,
@@ -6491,6 +6493,7 @@ class Server extends AppModel
                     'value' => false,
                     'test' => 'testBool',
                     'type' => 'boolean',
+                    'null' => true
                 ),
                 'key_fetching_disabled' => [
                     'level' => self::SETTING_OPTIONAL,
@@ -6498,6 +6501,15 @@ class Server extends AppModel
                     'value' => false,
                     'test' => 'testBool',
                     'type' => 'boolean',
+                    'null' => true
+                ],
+                'restrict_server_signing_to_host_org' => [
+                    'level' => self::SETTING_RECOMMENDED,
+                    'description' => __('Restrict server signing via /encryptionKeys/serverSign to host org only users, even for users that otherwise meet role requirements. This setting defaults to false. Site admins are exempt from this requirement, even when the setting is enabled.'),
+                    'value' => false,
+                    'test' => 'testBool',
+                    'type' => 'boolean',
+                    'null' => true
                 ],
             ),
             'SMIME' => array(
