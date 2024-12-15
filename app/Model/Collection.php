@@ -36,7 +36,16 @@ class Collection extends AppModel
                 'User.id',
                 'User.email'
             ]
-        )
+        ),
+        'SharingGroup' => [
+            'className' => 'SharingGroup',
+            'foreignKey' => 'sharing_group_id',
+            'fields' => [
+                'SharingGroup.id',
+                'SharingGroup.uuid',
+                'SharingGroup.name'
+            ]
+        ]
     ];
 
     public $hasMany = [

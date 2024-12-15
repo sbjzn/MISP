@@ -91,7 +91,7 @@ class CollectionsController extends AppController
         $this->set('menuData', array('menuList' => 'collections', 'menuItem' => 'edit'));
         $this->loadModel('Event');
         $dropdownData = [
-            'types' => $this->valid_types,
+            'types' => array_combine($this->valid_types, $this->valid_types),
             'distributionLevels' => $this->Event->distributionLevels,
             'sgs' => $this->Event->SharingGroup->fetchAllAuthorised($this->Auth->user(), 'name', 1)  
         ];
@@ -144,7 +144,7 @@ class CollectionsController extends AppController
         $params = [
             'filters' => ['Collection.uuid', 'Collection.type', 'Collection.name'],
             'quickFilters' => ['Collection.name'],
-            'contain' => ['Orgc'],
+            'contain' => ['Orgc', 'SharingGroup'],
             'afterFind' => function($collections) {
                 foreach ($collections as $k => $collection) {
                     $collections[$k]['Collection']['element_count'] = $this->Collection->CollectionElement->find('count', [
