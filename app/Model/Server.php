@@ -4351,7 +4351,7 @@ class Server extends AppModel
 
     public function checkoutMain()
     {
-        $mainBranch = '2.4';
+        $mainBranch = '2.5';
         return exec('git checkout ' . $mainBranch);
     }
 
@@ -5881,7 +5881,8 @@ class Server extends AppModel
                     'errorMessage' => __('Logging has now been disabled - your audit logs will not capture failed authentication attempts, your event history logs are not being populated and no system maintenance messages are being logged.'),
                     'test' => 'testBoolFalse',
                     'type' => 'boolean',
-                    'null' => true
+                    'null' => true,
+                    'cli_only' => 1
                 ),
                 'log_skip_access_logs_in_application_logs' => [
                     'level' => 0,
@@ -6612,7 +6613,8 @@ class Server extends AppModel
                     'errorMessage' => 'This setting leaves your users open to CSRF attacks. Please consider disabling this setting.',
                     'test' => 'testBoolFalse',
                     'type' => 'boolean',
-                    'null' => true
+                    'null' => true,
+                    'cli_only' => 1
                 ),
                 'csp_enforce' => [
                     'level' => self::SETTING_CRITICAL,
@@ -6737,7 +6739,8 @@ class Server extends AppModel
                     'value' => false,
                     'test' => 'testBool',
                     'type' => 'boolean',
-                    'null' => true
+                    'null' => true,
+                    'cli_only' => 1
                 ),
                 'mandate_ip_allowlist_advanced_authkeys' => array(
                     'level' => 2,
@@ -6942,7 +6945,8 @@ class Server extends AppModel
                     'errorMessage' => __('You have enabled the logging of API keys in clear text. This is highly recommended against, do you really want to reveal APIkeys in your logs?...'),
                     'test' => 'testBoolFalse',
                     'type' => 'boolean',
-                    'null' => true
+                    'null' => true,
+                    'cli_only' => 1
                 ),
                 'allow_cors' => array(
                     'level' => 1,
