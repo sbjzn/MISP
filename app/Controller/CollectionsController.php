@@ -161,6 +161,9 @@ class CollectionsController extends AppController
         if ($filter === 'org_collections') {
             $params['conditions']['Collection.orgc_id'] = $this->Auth->user('org_id');
         }
+        if (!$this->_isSiteAdmin()) {
+            $params['conditions']['AND'][] = $this->Collection->buildConditions($this->Auth->user('id'));
+        }
         $this->loadModel('Event');
         $this->set('distributionLevels', $this->Event->distributionLevels);
         $this->CRUD->index($params);

@@ -629,6 +629,7 @@ class ACLComponent extends Component
             'serverSettings' => array(),
             'serverSettingsEdit' => array(),
             'serverSettingsReloadSetting' => array(),
+            'serverSign' => ['perm_server_sign'],
             'startWorker' => array(),
             'startZeroMQServer' => array(),
             'statusZeroMQServer' => array(),

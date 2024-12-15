@@ -93,6 +93,7 @@ class CRUDComponent extends Component
             }
             /** @var Model $model */
             $model = $this->Controller->{$modelName};
+            $model->create();
             $savedData = $model->save($data);
             if ($savedData) {
                 if (isset($params['afterSave'])) {

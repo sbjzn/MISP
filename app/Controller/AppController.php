@@ -1042,6 +1042,9 @@ class AppController extends Controller
             if (!in_array('limit', $options['paramArray'])) {
                 $options['paramArray'][] = 'limit';
             }
+            if (!in_array('sign', $options['paramArray'])) {
+                $options['paramArray'][] = 'sign';
+            }
         }
         $request = $options['request'] ?? $this->request;
         if ($request->is('post')) {
@@ -1438,6 +1441,9 @@ class AppController extends Controller
             $this->set($final);
             $this->render('/Events/module_views/' . $renderView);
         } else {
+            if (!empty($filters['sign'])) {
+                $this->RestResponse->signContents = true;
+            }
             $filename = $this->RestSearch->getFilename($filters, $scope, $responseType);
             $headers = ['X-Result-Count' => $elementCounter, 'X-Export-Module-Used' => $returnFormat, 'X-Response-Format' => $responseType, 'X-Skipped-Elements-Count' => $skippedElementsCounter];
             return $this->RestResponse->viewData($final, $responseType, false, true, $filename, $headers);

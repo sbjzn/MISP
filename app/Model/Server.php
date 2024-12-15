@@ -521,6 +521,7 @@ class Server extends AppModel
                 if ($existingEvent['Event']['protected']) {
                     if (!$eventModel->CryptographicKey->validateProtectedEvent($response->body, $user, $response->getHeader('x-pgp-signature'), $existingEvent)) {
                         $fails[$eventId] = __('Event failed the validation checks. The remote instance claims that the event can be signed with a valid key which is sus.');
+                        return false;
                     }
                 }
                 $result = $eventModel->_edit($event, $user, $existingEvent['Event']['id'], $jobId, $passAlong, $force);
@@ -2463,7 +2464,7 @@ class Server extends AppModel
         if (isset($setting['beforeHook'])) {
             $beforeResult = $this->{$setting['beforeHook']}($setting['name'], $value);
             if ($beforeResult !== true) {
-                $change = 'There was an issue witch changing ' . $setting['name'] . ' to ' . $value  . '. The error message returned is: ' . $beforeResult . 'No changes were made.';
+                $change = 'There was an issue with changing ' . $setting['name'] . ' to ' . $value  . '. The error message returned is: ' . $beforeResult . 'No changes were made.';
                 $this->loadLog()->createLogEntry($user, 'serverSettingsEdit', 'Server', 0, 'Server setting issue', $change);
                 return $beforeResult;
             }
@@ -5585,7 +5586,7 @@ class Server extends AppModel
                 ),
                 'disablerestalert' => array(
                     'level' => 1,
-                    'description' => __('This setting controls whether notification e-mails will be sent when an event is created via the REST interface. It might be a good idea to disable this setting when first setting up a link to another instance to avoid spamming your users during the initial pull. Quick recap: True = Emails are NOT sent, False = Emails are sent on events published via sync / REST.'),
+                    'description' => __('This setting controls whether notification e-mails will be sent when an event is created via the REST interface. It might be a good idea to enable this setting when first setting up a link to another instance to avoid spamming your users during the initial pull. Quick recap: True = Emails are NOT sent, False = Emails are sent on events published via sync / REST.'),
                     'value' => true,
                     'test' => 'testBool',
                     'type' => 'boolean',
@@ -6453,7 +6454,8 @@ class Server extends AppModel
                     'value' => '/usr/bin/gpg',
                     'test' => 'testForGPGBinary',
                     'type' => 'string',
-                    'cli_only' => 1
+                    'cli_only' => 1,
+                    'null' => true
                 ),
                 'onlyencrypted' => array(
                     'level' => 0,
@@ -6504,6 +6506,7 @@ class Server extends AppModel
                     'value' => false,
                     'test' => 'testBool',
                     'type' => 'boolean',
+                    'null' => true
                 ),
                 'key_fetching_disabled' => [
                     'level' => self::SETTING_OPTIONAL,
@@ -6511,6 +6514,15 @@ class Server extends AppModel
                     'value' => false,
                     'test' => 'testBool',
                     'type' => 'boolean',
+                    'null' => true
+                ],
+                'restrict_server_signing_to_host_org' => [
+                    'level' => self::SETTING_RECOMMENDED,
+                    'description' => __('Restrict server signing via /encryptionKeys/serverSign to host org only users, even for users that otherwise meet role requirements. This setting defaults to false. Site admins are exempt from this requirement, even when the setting is enabled.'),
+                    'value' => false,
+                    'test' => 'testBool',
+                    'type' => 'boolean',
+                    'null' => true
                 ],
             ),
             'SMIME' => array(
@@ -6753,7 +6765,7 @@ class Server extends AppModel
                 ),
                 'check_sec_fetch_site_header' => [
                     'level' => 0,
-                    'description' => __('If enabled, any POST, PUT or AJAX request will be allow just when Sec-Fetch-Site header is not defined or contains "same-origin".'),
+                    'description' => __('If enabled, any POST, PUT or AJAX request will only be allowed when Sec-Fetch-Site header is not defined or contains "same-origin".'),
                     'value' => false,
                     'test' => 'testBool',
                     'type' => 'boolean',

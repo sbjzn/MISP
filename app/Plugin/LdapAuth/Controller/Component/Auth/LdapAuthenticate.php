@@ -30,7 +30,7 @@ class LdapAuthenticate extends BaseAuthenticate
             'ldapDn' => Configure::read('LdapAuth.ldapDn'),
             'ldapReaderUser' => Configure::read('LdapAuth.ldapReaderUser'),
             'ldapReaderPassword' => Configure::read('LdapAuth.ldapReaderPassword'),
-            'ldapSearchFilter' => Configure::read('LdapAuth.ldapSearchFilter'),
+            'ldapSearchFilter' => Configure::read('LdapAuth.ldapSearchFilter') ?? '',
             'ldapSearchAttribute' => Configure::read('LdapAuth.ldapSearchAttribute') ?? 'mail',
             'ldapEmailField' => Configure::read('LdapAuth.ldapEmailField') ?? ['mail'],
             'ldapNetworkTimeout' => Configure::read('LdapAuth.ldapNetworkTimeout') ?? -1,
@@ -38,7 +38,7 @@ class LdapAuthenticate extends BaseAuthenticate
             'ldapAllowReferrals' => Configure::read('LdapAuth.ldapAllowReferrals') ?? true,
             'starttls' => Configure::read('LdapAuth.starttls') ?? false,
             'mixedAuth' => Configure::read('LdapAuth.mixedAuth') ?? true,
-            'ldapDefaultOrgId' => Configure::read('LdapAuth.ldapDefaultOrgId'),
+            'ldapDefaultOrgId' => Configure::read('LdapAuth.ldapDefaultOrgId') ?? 1,
             'ldapDefaultRoleId' => Configure::read('LdapAuth.ldapDefaultRoleId') ?? 3,
             'updateUser' => Configure::read('LdapAuth.updateUser') ?? true,
             'debug' => Configure::read('LdapAuth.debug') ?? false,
@@ -144,7 +144,7 @@ class LdapAuthenticate extends BaseAuthenticate
             $filter =  '(&' . self::$conf['ldapSearchFilter'] . $filter . ')';
         }
 
-        $ldapUser = ldap_search($ldapconn, self::$conf['ldapDn'], $filter, ['mail']);
+        $ldapUser = ldap_search($ldapconn, self::$conf['ldapDn'], $filter, self::$conf['ldapEmailField']);
 
         if (!$ldapUser) {
             CakeLog::error("[LdapAuth] LDAP user search failed: " . ldap_error($ldapconn));
@@ -178,6 +178,12 @@ class LdapAuthenticate extends BaseAuthenticate
         $this->settings['fields'] = ["username" => "email"];
 
         $ldapconn = $this->ldapConnect();
+
+        $ldapbind = ldap_bind($ldapconn, self::$conf['ldapReaderUser'],  self::$conf['ldapReaderPassword']);
+        if (!$ldapbind) {
+            CakeLog::error("[LdapAuth] Invalid LDAP reader user credentials: " . ldap_error($ldapconn));
+            throw new UnauthorizedException(__('User could not be authenticated by LDAP.'));
+        }
 
         $ldapUserData = $this->getLdapUserData($ldapconn, $email);
 

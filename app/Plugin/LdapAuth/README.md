@@ -174,7 +174,7 @@ To configure these settings in your application, ensure each setting is defined 
     'ldapEmailField' => ['mail', 'uid'],
     'ldapNetworkTimeout' => -1,
     'ldapProtocol' => 3,
-    'ldapAllowReferrals' => false,
+    'ldapAllowReferrals' => 0,
     'starttls' => true,
     'mixedAuth' => true,
     'ldapDefaultOrg' => 1,
@@ -204,6 +204,116 @@ If experiencing issues when configuring MISP to use LDAPS, try:
 
 
 #### Debugging
+
+There is a test/diagnostics script that uses the LdapAuth configuration from `app/Config/config.php`
+
+**Usage:**
+`php app/Plugin/LdapAuth/Controller/Component/Auth/TestLdapAuth.php`
+
+```
+################################################
+##           LdapAuth test script             ##
+################################################
+LdapAuth Configuration:
+Array
+(
+    [ldapServer] => ldap://openldap:1389
+    [ldapDn] => dc=example,dc=com
+    [ldapReaderUser] => cn=reader,dc=example,dc=com
+    [ldapReaderPassword] => readerpassword
+    [ldapSearchFilter] => (objectclass=inetOrgPerson)
+    [ldapSearchAttribute] => mail
+    [ldapEmailField] => Array
+        (
+            [0] => mail
+        )
+
+    [ldapNetworkTimeout] => -1
+    [ldapProtocol] => 3
+    [ldapAllowReferrals] => 1
+    [starttls] => 
+    [mixedAuth] => 1
+    [ldapDefaultOrgId] => 1
+    [ldapDefaultRoleId] => 3
+    [updateUser] => 1
+    [debug] => 
+    [ldapTlsRequireCert] => 2
+    [ldapTlsCustomCaCert] => 
+    [ldapTlsCrlCheck] => 1
+    [ldapTlsProtocolMin] => 771
+)
+
+
+LdapAuth Connection:
+ldap_url_parse_ext(ldap://localhost/)
+ldap_init: trying /etc/ldap/ldap.conf
+ldap_init: using /etc/ldap/ldap.conf
+[]...]
+ldap_create
+ldap_url_parse_ext(ldap://openldap:1389)no  
+ldap_sasl_bind_s
+ldap_sasl_bind
+ldap_send_initial_request
+ldap_new_connection 1 1 0
+ldap_int_open_connection
+ldap_connect_to_host: TCP openldap:1389
+ldap_new_socket: 4
+ldap_prepare_socket: 4
+ldap_connect_to_host: Trying 172.19.0.5:1389
+ldap_pvt_connect: fd: 4 tm: -1 async: 0
+attempting to connect: 
+connect success
+ldap_open_defconn: successful
+ldap_send_server_request
+[...]
+ldap_free_request_int: lr 0x557da8b88240 msgid 1 removed
+ldap_do_free_request: asked to free lr 0x557da8b88240 msgid 1 refcnt 0
+ldap_parse_result
+ldap_msgfree
+[Info] LDAP bind with reader user successful.
+Enter the email to search in the LDAP server: jdoe@example.com
+LDAP search filter: (&(objectclass=inetOrgPerson)(mail=jdoe@example.com))
+ldap_search_ext
+put_filter: "(&(objectclass=inetOrgPerson)(mail=jdoe@example.com))"
+put_filter: AND
+put_filter_list "(objectclass=inetOrgPerson)(mail=jdoe@example.com)"
+put_filter: "(objectclass=inetOrgPerson)"
+put_filter: simple
+put_simple_filter: "objectclass=inetOrgPerson"
+put_filter: "(mail=jdoe@example.com)"
+put_filter: simple
+put_simple_filter: "mail=jdoe@example.com"
+ldap_build_search_req ATTRS: mail
+[...]
+User Data:
+Array
+(
+    [count] => 1
+    [0] => Array
+        (
+            [mail] => Array
+                (
+                    [count] => 1
+                    [0] => jdoe@example.com
+                )
+
+            [0] => mail
+            [count] => 1
+            [dn] => uid=jdoe,ou=users,dc=example,dc=com
+        )
+
+)
+
+LDAP bind with user: uid=jdoe,ou=users,dc=example,dc=com
+Enter password: ********
+[...]
+[Success] LDAP user authentication successful!
+ldap_free_connection 1 1
+ldap_send_unbind
+ldap_free_connection: actually freed
+ldap_msgfree
+```
+
 Additionally, you can install `ldap-utils` and use the `ldapsearch` tool to verify the connection.
 In this scenairo you may have to edit the `/etc/ldap/ldap.conf` to match the LDAP settings used by MISP
 
@@ -237,3 +347,11 @@ Example test (failed) search:
 # ldapsearch -H ldaps://localhost:1636 -x -b "dc=example,dc=com" -D "cn=reader,dc=example,dc=com" -w password -d 1
 TLS: hostname (localhost) does not match common name in certificate (ldap.example.com).
 TLS: can't connect: (unknown error code).
+
+### Known issues
+#### Error: [LdapAuth] LDAP user search failed: Operations error
+```
+Warning (2): ldap_search(): Search: Operations error in [/var/www/MISP/app/Plugin/LdapAuth/Controller/Component/Auth/LdapAuthenticate.php, line ...]
+```
+
+Try setting `"ldapAllowReferrals" => 0`
