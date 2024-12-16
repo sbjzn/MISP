@@ -5576,6 +5576,7 @@ class Server extends AppModel
                     'value' => 'https://cve.circl.lu/cve/',
                     'test' => 'testForEmpty',
                     'type' => 'string',
+                    'cli_only' => 1
                 ),
                 'cweurl' => array(
                     'level' => 1,
@@ -5583,6 +5584,7 @@ class Server extends AppModel
                     'value' => 'https://cve.circl.lu/cwe/',
                     'test' => 'testForEmpty',
                     'type' => 'string',
+                    'cli_only' => 1
                 ),
                 'disablerestalert' => array(
                     'level' => 1,
@@ -6573,6 +6575,7 @@ class Server extends AppModel
                     'value' => '',
                     'test' => 'testForEmpty',
                     'type' => 'string',
+                    'cli_only' => 1
                 ),
                 'port' => array(
                     'level' => 2,
@@ -6580,6 +6583,7 @@ class Server extends AppModel
                     'value' => '',
                     'test' => 'testForNumeric',
                     'type' => 'numeric',
+                    'cli_only' => 1
                 ),
                 'method' => array(
                     'level' => 2,
@@ -6587,6 +6591,7 @@ class Server extends AppModel
                     'value' => '',
                     'test' => 'testForEmpty',
                     'type' => 'string',
+                    'cli_only' => 1
                 ),
                 'user' => array(
                     'level' => 2,
@@ -6594,6 +6599,7 @@ class Server extends AppModel
                     'value' => '',
                     'test' => 'testForEmpty',
                     'type' => 'string',
+                    'cli_only' => 1
                 ),
                 'password' => array(
                     'level' => 2,
@@ -6601,7 +6607,8 @@ class Server extends AppModel
                     'value' => '',
                     'test' => 'testForEmpty',
                     'type' => 'string',
-                    'redacted' => true
+                    'redacted' => true,
+                    'cli_only' => 1
                 ),
             ),
             'Security' => array(

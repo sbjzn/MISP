@@ -1228,6 +1228,17 @@ class EventReport extends AppModel
         return !empty($module) ? $module : false;
     }
 
+    public function isFetchURLModuleEnabledAndAllowed($user, $moduleName = 'html_to_markdown') {
+        $module = $this->isFetchURLModuleEnabled($moduleName);
+        if (empty($module)) {
+            return false;
+        }
+        if (!$this->Module->canUse($user, 'Enrichment', ['name' => $moduleName])) {
+            return false;
+        }
+        return $module;
+    }
+
     /**
      * findValidReplacementTag Search if tagName is in content
      *

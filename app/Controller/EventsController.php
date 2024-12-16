@@ -5316,12 +5316,16 @@ class EventsController extends AppController
         if (!Configure::read('Plugin.' . $type . '_services_enable')) {
             throw new MethodNotAllowedException(__('%s services are not enabled.', $type));
         }
+        $this->loadModel('Module');
+        
+        if (!$this->Module->canUse($this->Auth->user(), 'Enrichment', ['name' => $module])) {
+            throw new MethodNotAllowedException('Module not found or not available.');
+        }
 
         if (!in_array($model, array('Attribute', 'ShadowAttribute', 'Object', 'Event'))) {
             throw new MethodNotAllowedException(__('Invalid model.'));
         }
 
-        $this->loadModel('Module');
         $enabledModules = $this->Module->getEnabledModules($this->Auth->user(), false, $type);
 
         if (!is_array($enabledModules) || empty($enabledModules)) {

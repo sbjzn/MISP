@@ -484,7 +484,11 @@ class EventReportsController extends AppController
         if (!$this->request->is('ajax') && !$this->_isRest()) {
             throw new MethodNotAllowedException(__('This function can only be reached via AJAX and via the API.'));
         }
-        $fetcherModule = $this->EventReport->isFetchURLModuleEnabled();
+        $errors = [];
+        $fetcherModule = $this->EventReport->isFetchURLModuleEnabledAndAllowed($this->Auth->user());
+        if (empty($fetcherModule)) {
+            $errors[] = __('Could not fetch report from URL. Fetcher module not enabled or could not download the page');
+        }
         if ($this->request->is('post')) {
             if (empty($this->data['EventReport'])) {
                 $this->data = ['EventReport' => $this->data];
@@ -501,22 +505,24 @@ class EventReportsController extends AppController
                     $format = $parsed_format;
                 }
             }
-            $content = $this->EventReport->downloadMarkdownFromURL($event_id, $url, $format);
-
-            $errors = [];
-            if (!empty($content)) {
-                $report = [
-                    'name' => __('Report from - %s (%s)', $url, time()),
-                    'distribution' => 5,
-                    'content' => $content
-                ];
-                $errors = $this->EventReport->addReport($this->Auth->user(), $report, $event_id);
-            } else {
-                $errors[] = __('Could not fetch report from URL. Fetcher module not enabled or could not download the page');
+            $content = null;
+            if (empty($errors)) {
+                $content = $this->EventReport->downloadMarkdownFromURL($event_id, $url, $format);
+                if (!empty($content)) {
+                    $report = [
+                        'name' => __('Report from - %s (%s)', $url, time()),
+                        'distribution' => 5,
+                        'content' => $content
+                    ];
+                    $errors = $this->EventReport->addReport($this->Auth->user(), $report, $event_id);
+                } else {
+                    $errors[] = __('Could not fetch report from URL. Fetcher module not enabled or could not download the page');
+                }
             }
             $redirectTarget = array('controller' => 'events', 'action' => 'view', $event_id);
             if (!empty($errors)) {
-                return $this->__getFailResponseBasedOnContext($errors, array(), 'addFromURL', $this->EventReport->id, $redirectTarget);
+                $event_report_id = empty($this->EventReport->id) ? 0 : $this->EventReport->id;
+                return $this->__getFailResponseBasedOnContext($errors, array(), 'addFromURL', $event_report_id, $redirectTarget);
             } else {
                 $successMessage = __('Report downloaded and created');
                 $report = $this->EventReport->simpleFetchById($this->Auth->user(), $this->EventReport->id);
