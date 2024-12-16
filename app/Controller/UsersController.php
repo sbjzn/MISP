@@ -2095,6 +2095,10 @@ class UsersController extends AppController
         $stats['attribute_count_month'] = $this->User->Event->Attribute->find('count', array('conditions' => array('Attribute.timestamp >' => $this_month, 'Attribute.deleted' => 0), 'recursive' => -1));
         $stats['attributes_per_event'] = $stats['event_count'] != 0 ? round($stats['attribute_count'] / $stats['event_count']) : 0;
 
+        $stats['object_count'] = $this->User->Event->Object->find('count', array('conditions' => array('Object.deleted' => 0), 'recursive' => -1));
+        $stats['object_count_month'] = $this->User->Event->Object->find('count', array('conditions' => array('Object.timestamp >' => $this_month, 'Object.deleted' => 0), 'recursive' => -1));
+        $stats['objects_per_event'] = $stats['event_count'] != 0 ? round($stats['object_count'] / $stats['event_count']) : 0;
+
         $stats['correlation_count'] = $this->User->Event->Attribute->Correlation->find('count', array('recursive' => -1));
 
         $stats['proposal_count'] = $this->User->Event->ShadowAttribute->find('count', array('recursive' => -1, 'conditions' => array('deleted' => 0)));
