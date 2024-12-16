@@ -3082,7 +3082,7 @@
                 "is_nullable": "NO",
                 "data_type": "int",
                 "character_maximum_length": null,
-                "numeric_precision": 10,
+                "numeric_precision": "10",
                 "collation_name": null,
                 "column_type": "int(11)",
                 "column_default": null,
@@ -3092,9 +3092,9 @@
                 "column_name": "name",
                 "is_nullable": "NO",
                 "data_type": "varchar",
-                "character_maximum_length": 191,
+                "character_maximum_length": "191",
                 "numeric_precision": null,
-                "collation_name": "utf8mb3_uca1400_ai_ci",
+                "collation_name": "utf8mb3_general_ci",
                 "column_type": "varchar(191)",
                 "column_default": null,
                 "extra": ""
@@ -3103,9 +3103,9 @@
                 "column_name": "value",
                 "is_nullable": "YES",
                 "data_type": "text",
-                "character_maximum_length": 65535,
+                "character_maximum_length": "65535",
                 "numeric_precision": null,
-                "collation_name": "utf8mb3_uca1400_ai_ci",
+                "collation_name": "utf8mb3_general_ci",
                 "column_type": "text",
                 "column_default": "NULL",
                 "extra": ""
@@ -6874,6 +6874,17 @@
             },
             {
                 "column_name": "perm_skip_otp",
+                "is_nullable": "NO",
+                "data_type": "tinyint",
+                "character_maximum_length": null,
+                "numeric_precision": "3",
+                "collation_name": null,
+                "column_type": "tinyint(1)",
+                "column_default": "0",
+                "extra": ""
+            },
+            {
+                "column_name": "perm_server_sign",
                 "is_nullable": "NO",
                 "data_type": "tinyint",
                 "character_maximum_length": null,
@@ -10973,5 +10984,5 @@
             "uuid": false
         }
     },
-    "db_version": "133"
+    "db_version": "134"
 }
