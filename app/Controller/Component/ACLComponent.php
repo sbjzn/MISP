@@ -160,6 +160,7 @@ class ACLComponent extends Component
             'add' => ['perm_add'],
             'delete' => ['perm_add'],
             'index' => ['*'],
+            'serverSign' => ['perm_server_sign'],
             'view' => ['*']
         ],
         'dashboards' => array(
