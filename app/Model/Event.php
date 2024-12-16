@@ -5967,6 +5967,9 @@ class Event extends AppModel
         if (!is_array($module)) {
             throw new NotFoundException('Invalid module.');
         }
+        if (!$this->Module->canUse($user, 'Enrichment', ['name' => $module])) {
+            throw new MethodNotAllowedException('That export module is restricted.');
+        }
         // Export module can specify additional options for event fetch
         if (isset($module['meta']['fetch_options'])) {
             $options = array_merge($options, $module['meta']['fetch_options']);

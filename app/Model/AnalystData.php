@@ -110,8 +110,11 @@ class AnalystData extends AppModel
                 ],
             ]
         ]);
-        $this->Org = ClassRegistry::init('Organisation');
-        $this->Orgc = ClassRegistry::init('Organisation');
+        $this->Org = $this->Orgc = ClassRegistry::init('Organisation');
+        if (in_array($this->alias, self::ANALYST_DATA_TYPES)) {
+            $this->schema();
+            $this->_schema['distribution']['default'] = Configure::read('MISP.default_analyst_data_distribution') ?? 1;
+        }
     }
 
     public function afterFind($results, $primary = false)
@@ -119,20 +122,20 @@ class AnalystData extends AppModel
         parent::afterFind($results, $primary);
 
         $this->setUser();
-        foreach ($results as $i => $v) {
-            $results[$i][$this->alias]['note_type'] = $this->current_type_id;
-            $results[$i][$this->alias]['note_type_name'] = $this->current_type;
+        foreach ($results as &$v) {
+            $v[$this->alias]['note_type'] = $this->current_type_id;
+            $v[$this->alias]['note_type_name'] = $this->current_type;
 
-            $results[$i] = $this->rearrangeOrganisation($results[$i], $this->current_user);
-            $results[$i] = $this->rearrangeSharingGroup($results[$i], $this->current_user);
+            $v = $this->rearrangeOrganisation($v);
+            $v = $this->rearrangeSharingGroup($v, $this->current_user);
 
-            $results[$i][$this->alias]['_canEdit'] = $this->canEditAnalystData($this->current_user, $v, $this->alias);
-            if (!empty($this->fetchRecursive) && !empty($results[$i][$this->alias]['uuid'])) {
+            $v[$this->alias]['_canEdit'] = $this->canEditAnalystData($this->current_user, $v, $this->alias);
+            if (!empty($this->fetchRecursive) && !empty($v[$this->alias]['uuid'])) {
                 $this->Note = ClassRegistry::init('Note');
                 $this->Opinion = ClassRegistry::init('Opinion');
                 $this->Note->fetchRecursive = false;
                 $this->Opinion->fetchRecursive = false;
-                $results[$i][$this->alias] = $this->fetchChildNotesAndOpinions($this->current_user, $results[$i][$this->alias]);
+                $v[$this->alias] = $this->fetchChildNotesAndOpinions($this->current_user, $v[$this->alias]);
                 $this->Note->fetchRecursive = true;
                 $this->Opinion->fetchRecursive = true;
             }
@@ -183,7 +186,7 @@ class AnalystData extends AppModel
 
         if (empty($this->data[$this->current_type]['id'])) {
             if (!isset($this->data[$this->current_type]['distribution'])) {
-                $this->data[$this->current_type]['distribution'] = Configure::read('MISP.default_event_distribution'); // use default event distribution
+                $this->data[$this->current_type]['distribution'] = $this->_schema['distribution']['default'];
             }
             if ($this->data[$this->current_type]['distribution'] != 4) {
                 $this->data[$this->current_type]['sharing_group_id'] = null;

@@ -5316,12 +5316,16 @@ class EventsController extends AppController
         if (!Configure::read('Plugin.' . $type . '_services_enable')) {
             throw new MethodNotAllowedException(__('%s services are not enabled.', $type));
         }
+        $this->loadModel('Module');
+        
+        if (!$this->Module->canUse($this->Auth->user(), 'Enrichment', ['name' => $module])) {
+            throw new MethodNotAllowedException('Module not found or not available.');
+        }
 
         if (!in_array($model, array('Attribute', 'ShadowAttribute', 'Object', 'Event'))) {
             throw new MethodNotAllowedException(__('Invalid model.'));
         }
 
-        $this->loadModel('Module');
         $enabledModules = $this->Module->getEnabledModules($this->Auth->user(), false, $type);
 
         if (!is_array($enabledModules) || empty($enabledModules)) {
@@ -6146,6 +6150,12 @@ class EventsController extends AppController
         if ($this->request->is('post') && !empty($this->request['data']['Event']['analysis_file']['name'])) {
             $this->set('file_uploaded', "1");
             $this->set('file_name', $this->request['data']['Event']['analysis_file']['name']);
+            $tmp_name = $this->request['data']['Event']['analysis_file']['tmp_name'];
+            if ((isset($fileupload['error']) && $fileupload['error'] == 0) || (!empty($tmp_name) && $tmp_name != 'none') && is_uploaded_file($tmp_name)) {
+                $this->set('file_content', file_get_contents($tmp_name)); 
+            } else {
+                throw new InternalErrorException('Upload failed or invalid file name.');
+            }
             $this->set('file_content', file_get_contents($this->request['data']['Event']['analysis_file']['tmp_name']));
         //$result = $this->Event->upload_mactime($this->Auth->user(), );
         } elseif ($this->request->is('post') && $this->request['data']['SelectedData']['mactime_data']) {
