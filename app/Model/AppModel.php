@@ -2264,8 +2264,6 @@ class AppModel extends Model
                 $indexArray[] = array('event_report_tags', 'tag_id');
                 break;
             case 133:
-<<<<<<< HEAD
-=======
                 $sqlArray[] = "CREATE TABLE IF NOT EXISTS `event_report_template_variables` (
                     `id` int(11) NOT NULL AUTO_INCREMENT,
                     `name` varchar(191) NOT NULL,
@@ -2275,7 +2273,6 @@ class AppModel extends Model
                 $indexArray[] = array('event_report_template_variables', 'name');
                 break;
             case 134:
->>>>>>> develop
                 $sqlArray[] = "ALTER TABLE `roles` ADD `perm_server_sign` tinyint(1) NOT NULL DEFAULT 0;";
                 $sqlArray[] = "UPDATE `roles` SET `perm_server_sign`=1 WHERE `perm_site_admin` = 1;";
                 break;
