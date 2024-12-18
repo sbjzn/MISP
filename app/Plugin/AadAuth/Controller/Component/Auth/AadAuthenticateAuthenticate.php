@@ -104,7 +104,7 @@ class AadAuthenticateAuthenticate extends BaseAuthenticate
 		self::$misp_orgadmin =  Configure::read('AadAuth.misp_orgadmin');
 		self::$misp_siteadmin =  Configure::read('AadAuth.misp_siteadmin');
 		self::$check_ad_groups =  Configure::read('AadAuth.check_ad_groups');
-                self::$auth_property_name =  Configure::read('AadAuth.auth_property_name');
+        self::$auth_property_name =  Configure::read('AadAuth.auth_property_name') ?? "userPrincipalName";
 
 		$this->Log = ClassRegistry::init('Log');
 		$this->Log->create();
